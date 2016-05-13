@@ -25,7 +25,7 @@ void Material::updateConserved()
     }
 }
 
-void Material::flux(const std::valarray<double>& Q, std::valarray<double>& F)
+void Material::flux(const SimpleArray< double, 3 >& Q, SimpleArray< double, 3 >& F)
 {
     F[0] = Q[1];
     F[1] = (gamma - 1.0) * Q[2] + 0.5 * (3.0 - gamma) * Q[1] * Q[1] / Q[0];
@@ -35,7 +35,7 @@ void Material::flux(const std::valarray<double>& Q, std::valarray<double>& F)
 void Material::force(double dt)
 {
     int L, R;
-    std::valarray<double> F_L(3), F_R(3), Q_0(3), F_0(3);
+    SimpleArray< double, 3> F_L, F_R, Q_0, F_0;
     for(int i = 0; i < nCells + 1; i++)
     {
         L = i + nGhostCells - 1;
@@ -65,18 +65,8 @@ Material::Material(const int _nCells, const double _domain[2])
     primVars.resize(nCells + 2 * nGhostCells);
     consVars.resize(nCells + 2 * nGhostCells);
     tempVars.resize(nCells + 2 * nGhostCells);
-    for(unsigned i = 0; i < nCells + 2 * nGhostCells; i++)
-    {
-        primVars[i].resize(3);
-        consVars[i].resize(3);
-        tempVars[i].resize(3);
-    }
 
     xDirFlux.resize(nCells + 1);
-    for(unsigned i = 0; i < nCells + 1; i++)
-    {
-        xDirFlux[i].resize(3);
-    }
 
     gamma = 1.4;
 }
@@ -125,8 +115,8 @@ void Material::transmissiveBCs()
     for(unsigned i = 0; i < nGhostCells; i++)
     {
         consVars[i] = consVars[i + 1];
-        consVars[nCells + 2 * nGhostCells - i] = 
-            consVars[nCells + 2 * nGhostCells - (i + 1)];
+        consVars[nCells + 2 * nGhostCells -1 - i] = 
+            consVars[nCells + 2 * nGhostCells - 1 - (i + 1)];
     }
 }
 

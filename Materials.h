@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <iostream>
 #include <vector>
-#include <valarray>
+#include "SimpleArray.h"
 
 class Material
 {
@@ -16,16 +16,15 @@ class Material
         double gamma;       // TODO:Make specific to idealGas
 
     protected: 
-        // TODO: test kvector and blitz++
-        std::vector<std::valarray<double> > primVars;
-        std::vector<std::valarray<double> > consVars;
-        std::vector<std::valarray<double> > tempVars;
-        std::vector<std::valarray<double> > xDirFlux;
+        std::vector< SimpleArray< double, 3 > > primVars;
+        std::vector< SimpleArray< double, 3 > > consVars;
+        std::vector< SimpleArray< double, 3 > > tempVars;
+        std::vector< SimpleArray< double, 3 > > xDirFlux;
 
         void updatePrimitive();
         void updateConserved();
 
-        void flux(const std::valarray<double>& Q, std::valarray<double>& F);
+        void flux(const SimpleArray< double, 3 >& Q, SimpleArray< double, 3 >& F);
 
     public:
         Material(const int _nCells, const double _domain[2]);
