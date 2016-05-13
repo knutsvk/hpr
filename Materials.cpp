@@ -78,7 +78,7 @@ double Material::timeStep(const double c_CFL)
 
     for(unsigned i = 0; i < nCells + 2 * nGhostCells; i++)
     {
-        S[i] = std::fabs(primVars[i][1]) 
+        S[i] = fabs(primVars[i][1]) 
             + sqrt(gamma * primVars[i][2] / primVars[i][0]);
     }
 

@@ -4,7 +4,7 @@ using namespace std;
 
 int main(void)
 {
-    int N = 5000;
+    int N = 1000;
     double dom[2] = {0.0, 1.0};
     double c = 0.9;
 

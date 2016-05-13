@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <iostream>
 #include <vector>
+#include <cmath>
 #include "SimpleArray.h"
 
 class Material
