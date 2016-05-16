@@ -8,9 +8,8 @@
 #include "SimpleArray.h"
 
 /* TODO
- * don't save nCells explicitly, just make a size_t size() function
  * make classes which inherit Material: Fluid and Solid
- * don't save consVars, tempVars and xDirFlux
+ * don't save xDirFlux
  * implement SLIC
  */
 
@@ -24,13 +23,8 @@ class Material
         double gamma;
 
     protected: 
-//        std::vector< SimpleArray< double, 3 > > primVars;
         std::vector< SimpleArray< double, 3 > > consVars;
-//        std::vector< SimpleArray< double, 3 > > tempVars;
         std::vector< SimpleArray< double, 3 > > xDirFlux;
-
-/*        void updatePrimitive();
-        void updateConserved();*/
 
         void flux(const SimpleArray< double, 3 >& Q, SimpleArray< double, 3 >& F);
 
@@ -42,6 +36,7 @@ class Material
         std::vector<double> getVelocity();
         std::vector<double> getPressure();
         std::vector<double> getInternalEnergy();
+        std::vector<double> getSoundSpeed();
         double timeStep(const double c_CFL);
 
         void initialize(const double interfacePos, const double density[2],

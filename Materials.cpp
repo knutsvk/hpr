@@ -12,6 +12,9 @@ void Material::flux(const SimpleArray< double, 3 >& Q, SimpleArray< double, 3 >&
 
 Material::Material(const int _nCells, const double _domain[2])
 {
+    nCells = _nCells;
+    gamma = 1.4;
+
     for(unsigned i = 0; i < 2; i++)
     {
         domain[i] = _domain[i];
@@ -19,8 +22,8 @@ Material::Material(const int _nCells, const double _domain[2])
 
     dx = (domain[1] - domain[0]) / nCells;
 
-    consVars.resize(_nCells + 2 * nGhostCells);
-    xDirFlux.resize(_nCells + 1);
+    consVars.resize(nCells + 2 * nGhostCells);
+    xDirFlux.resize(nCells + 1);
 }
 
 std::vector<double> Material::getDensity()
@@ -67,15 +70,14 @@ std::vector<double> Material::getInternalEnergy()
 
 double Material::timeStep(const double c_CFL)
 {
-    std::vector<double> rho = getDensity();
-    std::vector<double> u = getVelocity();
-    std::vector<double> p = getPressure();
     std::vector<double> S(nCells + 2 * nGhostCells); 
+    double u;
 
     for(unsigned i = 0; i < nCells + 2 * nGhostCells; i++)
     {
-        S[i] = fabs(u[i]) 
-            + sqrt(gamma * p[i] / rho[i]);
+        u = consVars[i][1] / consVars[i][0];
+        S[i] = fabs(u) + sqrt((gamma - 1.0) * gamma * (consVars[i][2] /
+                    consVars[i][0] - 0.5 * u * u));
     }
 
     return c_CFL * dx / *std::max_element(S.begin(), S.end());
