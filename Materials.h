@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <omp.h>
 
 #include "SimpleArray.h"
 
@@ -17,8 +18,8 @@
 class Material
 {
     private: 
-        int nCells;
-        const static int nGhostCells = 2;
+        unsigned nCells;
+        const static unsigned nGhostCells = 2;
         double domain[2];
         double dx;
         double gamma;
