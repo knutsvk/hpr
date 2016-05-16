@@ -3,7 +3,7 @@ CXX=g++
 XXFLAGS=-O3 -Wall -Werror -pedantic -lm 
 OFLAGS=-ansi -I ~/.include/
 
-all: ${FILE} clean
+all: ${FILE} 
 
 %.o: %.cpp
 	${CXX} -x c++ -c $< -o $@ ${OFLAGS}

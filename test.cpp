@@ -2,9 +2,10 @@
 
 using namespace std;
 
-int main(void)
+int main(int argc, char* argv[])
 {
-    int N = 1000;
+    int N = 100;
+    if(argc > 1) N = atoi(argv[1]);
     double dom[2] = {0.0, 1.0};
     double c = 0.9;
 

@@ -3,28 +3,6 @@
 
 #include "Materials.h"
 
-void Material::updatePrimitive()
-{
-    for(unsigned i = 0; i < nCells + 2 * nGhostCells; i++)
-    {
-        primVars[i][0] = consVars[i][0];
-        primVars[i][1] = consVars[i][1] / consVars[i][0];
-        primVars[i][2] = (gamma - 1.0) * (consVars[i][2] - 0.5 * consVars[i][1]
-                * consVars[i][1] / consVars[i][0]);
-    }
-}
-
-void Material::updateConserved()
-{
-    for(unsigned i = 0; i < nCells + 2 * nGhostCells; i++)
-    {
-        consVars[i][0] = primVars[i][0];
-        consVars[i][1] = primVars[i][0] * primVars[i][1];
-        consVars[i][2] = 0.5 * primVars[i][0] * primVars[i][1] * primVars[i][1]
-            + primVars[i][2] / (gamma - 1.0);
-    }
-}
-
 void Material::flux(const SimpleArray< double, 3 >& Q, SimpleArray< double, 3 >& F)
 {
     F[0] = Q[1];
@@ -32,29 +10,8 @@ void Material::flux(const SimpleArray< double, 3 >& Q, SimpleArray< double, 3 >&
     F[2] = (gamma * Q[2] - 0.5 * (gamma - 1.0) * Q[1] * Q[1] / Q[0]) * Q[1] / Q[0];
 }
 
-void Material::force(double dt)
-{
-    int L, R;
-    SimpleArray< double, 3> F_L, F_R, Q_0, F_0;
-    for(int i = 0; i < nCells + 1; i++)
-    {
-        L = i + nGhostCells - 1;
-        R = i + nGhostCells;
-        flux(consVars[L], F_L);
-        flux(consVars[R], F_R);
-        Q_0 = 0.5 * (consVars[L] + consVars[R]) 
-            + 0.5 * dt / dx * (F_L - F_R);
-        flux(Q_0, F_0);
-        xDirFlux[i] = 0.5 * (F_0 + 0.5 * (F_L + F_R)) 
-            + 0.25 * dx / dt * (consVars[L] - consVars[R]); 
-    }
-}
-
 Material::Material(const int _nCells, const double _domain[2])
 {
-    nCells = _nCells;
-    nGhostCells = 2;
-
     for(unsigned i = 0; i < 2; i++)
     {
         domain[i] = _domain[i];
@@ -62,24 +19,63 @@ Material::Material(const int _nCells, const double _domain[2])
 
     dx = (domain[1] - domain[0]) / nCells;
 
-    primVars.resize(nCells + 2 * nGhostCells);
-    consVars.resize(nCells + 2 * nGhostCells);
-    tempVars.resize(nCells + 2 * nGhostCells);
+    consVars.resize(_nCells + 2 * nGhostCells);
+    xDirFlux.resize(_nCells + 1);
+}
 
-    xDirFlux.resize(nCells + 1);
+std::vector<double> Material::getDensity()
+{
+    std::vector<double> rho(nCells + 2 * nGhostCells);
+    for(unsigned i = 0; i < nCells + 2 * nGhostCells; i++)
+    {
+        rho[i] = consVars[i][0];
+    }
+    return rho;
+}
 
-    gamma = 1.4;
+std::vector<double> Material::getVelocity()
+{
+    std::vector<double> u(nCells + 2 * nGhostCells);
+    for(unsigned i = nGhostCells; i < nCells + 2 * nGhostCells; i++)
+    {
+        u[i] = consVars[i][1] / consVars[i][0];
+    }
+    return u;
+}
+
+std::vector<double> Material::getPressure()
+{
+    std::vector<double> p(nCells + 2 * nGhostCells);
+    for(unsigned i = 0; i < nCells + 2 * nGhostCells; i++)
+    {
+        p[i] = (consVars[i][2] - 0.5 * consVars[i][1] *
+                consVars[i][1] / consVars[i][0]) * (gamma - 1.0);
+    }
+    return p;
+}
+
+std::vector<double> Material::getInternalEnergy()
+{
+    std::vector<double> e(nCells + 2 * nGhostCells);
+    for(unsigned i = 0; i < nCells + 2 * nGhostCells; i++)
+    {
+        e[i] = (consVars[i][2] - 0.5 * consVars[i][1] *
+                consVars[i][1] / consVars[i][0]) / (consVars[i][0]);
+    }
+    return e;
 }
 
 double Material::timeStep(const double c_CFL)
 {
+    std::vector<double> rho = getDensity();
+    std::vector<double> u = getVelocity();
+    std::vector<double> p = getPressure();
     std::vector<double> S(nCells + 2 * nGhostCells); 
-    updatePrimitive();
 
     for(unsigned i = 0; i < nCells + 2 * nGhostCells; i++)
     {
-        S[i] = fabs(primVars[i][1]) 
-            + sqrt(gamma * primVars[i][2] / primVars[i][0]);
+        S[i] = fabs(u[i]) 
+            + sqrt(gamma * p[i] / rho[i]);
     }
 
     return c_CFL * dx / *std::max_element(S.begin(), S.end());
@@ -89,25 +85,25 @@ void Material::initialize(const double initDiscontPos, const double density[2],
         const double velocity[2], const double pressure[2])
 {
     double x;
-
     for(unsigned i = 0; i < nCells + 2 * nGhostCells; i++)
     {
         x = (i - nGhostCells + 0.5) * dx;
 
         if(x < initDiscontPos)
         {
-            primVars[i][0] = density[0];
-            primVars[i][1] = velocity[0];
-            primVars[i][2] = pressure[0];
+            consVars[i][0] = density[0];
+            consVars[i][1] = density[0] * velocity[0];
+            consVars[i][2] = 0.5 * density[0] * velocity[0] * velocity[0] +
+                pressure[0] / (gamma - 1.0);
         }
         else
         {
-            primVars[i][0] = density[1];
-            primVars[i][1] = velocity[1];
-            primVars[i][2] = pressure[1];
+            consVars[i][0] = density[1];
+            consVars[i][1] = density[1] * velocity[1];
+            consVars[i][2] = 0.5 * density[1] * velocity[1] * velocity[1] +
+                pressure[1] / (gamma - 1.0);
         }
     }
-    updateConserved();
 }
 
 void Material::transmissiveBCs()
@@ -132,8 +128,27 @@ void Material::reflectiveBCs()
     }
 }
 
+void Material::force(double dt)
+{
+    int L, R;
+    SimpleArray< double, 3> F_L, F_R, Q_0, F_0;
+    for(int i = 0; i < nCells + 1; i++)
+    {
+        L = i + nGhostCells - 1;
+        R = i + nGhostCells;
+        flux(consVars[L], F_L);
+        flux(consVars[R], F_R);
+        Q_0 = 0.5 * (consVars[L] + consVars[R]) 
+            + 0.5 * dt / dx * (F_L - F_R);
+        flux(Q_0, F_0);
+        xDirFlux[i] = 0.5 * (F_0 + 0.5 * (F_L + F_R)) 
+            + 0.25 * dx / dt * (consVars[L] - consVars[R]); 
+    }
+}
+
 void Material::advancePDE(const double dt)
 {
+    std::vector< SimpleArray< double, 3 > > tempVars(nCells + 2 * nGhostCells);
     for(unsigned i = 0; i < nCells + 2 * nGhostCells; i++)
     {
         tempVars[i] = consVars[i];
@@ -151,14 +166,18 @@ void Material::advancePDE(const double dt)
 
 void Material::output()
 {
-    updatePrimitive();
+    std::vector<double> rho, u, p, e;
+    rho = getDensity();
+    u = getVelocity();
+    p = getPressure();
+    e = getInternalEnergy();
 
     std::cout << "x \trho \tu \tp \te" << std::endl;
     for(unsigned i = nGhostCells; i < nCells +  nGhostCells; i++)
     {
-        std::cout << (i - nGhostCells + 0.5) * dx << " \t" << primVars[i][0] << " \t"
-            << primVars[i][1] << " \t" << primVars[i][2] << " \t"
-            << primVars[i][2] / ((gamma - 1.0) * primVars[i][0]) << std::endl;
+        std::cout << domain[0] + (i - nGhostCells + 0.5) * dx << " \t" 
+            << rho[i] << " \t" << u[i] << " \t" << p[i] << " \t" << e[i] 
+            << std::endl;
     }
 }
 
