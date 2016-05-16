@@ -1,9 +1,13 @@
 FILE=test
 CXX=g++
-XXFLAGS=-O3 -Wall -Werror -pedantic -lm 
+XXFLAGS=-O3 -Wall -Werror -pedantic -lm -fopenmp
 OFLAGS=-ansi -I ~/.include/
 
-all: ${FILE} 
+all: setup ${FILE} 
+
+setup:
+	OMP_NUM_THREADS=4
+	OMP_SCHEDULE=static
 
 %.o: %.cpp
 	${CXX} -x c++ -c $< -o $@ ${OFLAGS}

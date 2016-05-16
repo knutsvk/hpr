@@ -134,6 +134,7 @@ void Material::force(double dt)
 {
     int L, R;
     SimpleArray< double, 3> F_L, F_R, Q_0, F_0;
+#pragma omp parallel for
     for(int i = 0; i < nCells + 1; i++)
     {
         L = i + nGhostCells - 1;
