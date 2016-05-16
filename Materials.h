@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+
 #include "SimpleArray.h"
 
 /* TODO
@@ -36,7 +37,6 @@ class Material
         std::vector<double> getVelocity();
         std::vector<double> getPressure();
         std::vector<double> getInternalEnergy();
-        std::vector<double> getSoundSpeed();
         double timeStep(const double c_CFL);
 
         void initialize(const double interfacePos, const double density[2],

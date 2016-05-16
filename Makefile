@@ -1,6 +1,7 @@
 FILE=test
 CXX=g++
-XXFLAGS=-O3 -Wall -Werror -pedantic -lm 
+XXFLAGS=-Wall -Werror -pedantic -O3
+XXLIBS=-lm
 OFLAGS=-ansi -I ~/.include/
 
 all: ${FILE} 
