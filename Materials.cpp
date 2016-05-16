@@ -29,6 +29,7 @@ Material::Material(const int _nCells, const double _domain[2])
 std::vector<double> Material::getDensity()
 {
     std::vector<double> rho(nCells + 2 * nGhostCells);
+#pragma omp parallel for 
     for(unsigned i = 0; i < nCells + 2 * nGhostCells; i++)
     {
         rho[i] = consVars[i][0];
@@ -39,6 +40,7 @@ std::vector<double> Material::getDensity()
 std::vector<double> Material::getVelocity()
 {
     std::vector<double> u(nCells + 2 * nGhostCells);
+#pragma omp parallel for 
     for(unsigned i = nGhostCells; i < nCells + 2 * nGhostCells; i++)
     {
         u[i] = consVars[i][1] / consVars[i][0];
@@ -49,6 +51,7 @@ std::vector<double> Material::getVelocity()
 std::vector<double> Material::getPressure()
 {
     std::vector<double> p(nCells + 2 * nGhostCells);
+#pragma omp parallel for 
     for(unsigned i = 0; i < nCells + 2 * nGhostCells; i++)
     {
         p[i] = (consVars[i][2] - 0.5 * consVars[i][1] *
@@ -60,6 +63,7 @@ std::vector<double> Material::getPressure()
 std::vector<double> Material::getInternalEnergy()
 {
     std::vector<double> e(nCells + 2 * nGhostCells);
+#pragma omp parallel for 
     for(unsigned i = 0; i < nCells + 2 * nGhostCells; i++)
     {
         e[i] = (consVars[i][2] - 0.5 * consVars[i][1] *
@@ -73,6 +77,7 @@ double Material::timeStep(const double c_CFL)
     std::vector<double> S(nCells + 2 * nGhostCells); 
     double u;
 
+#pragma omp parallel for private(u)
     for(unsigned i = 0; i < nCells + 2 * nGhostCells; i++)
     {
         u = consVars[i][1] / consVars[i][0];
@@ -87,6 +92,7 @@ void Material::initialize(const double initDiscontPos, const double density[2],
         const double velocity[2], const double pressure[2])
 {
     double x;
+#pragma omp parallel for private(x)
     for(unsigned i = 0; i < nCells + 2 * nGhostCells; i++)
     {
         x = (i - nGhostCells + 0.5) * dx;
@@ -134,8 +140,8 @@ void Material::force(double dt)
 {
     int L, R;
     SimpleArray< double, 3> F_L, F_R, Q_0, F_0;
-#pragma omp parallel for
-    for(int i = 0; i < nCells + 1; i++)
+#pragma omp parallel for private(L, R, F_L, F_R, Q_0, F_0)
+    for(unsigned i = 0; i < nCells + 1; i++)
     {
         L = i + nGhostCells - 1;
         R = i + nGhostCells;
@@ -152,6 +158,7 @@ void Material::force(double dt)
 void Material::advancePDE(const double dt)
 {
     std::vector< SimpleArray< double, 3 > > tempVars(nCells + 2 * nGhostCells);
+#pragma omp parallel for 
     for(unsigned i = 0; i < nCells + 2 * nGhostCells; i++)
     {
         tempVars[i] = consVars[i];

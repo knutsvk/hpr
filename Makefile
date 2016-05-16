@@ -1,19 +1,15 @@
-FILE=hello
-CXX=g++
-XXFLAGS=-O3 -Wall -Werror -pedantic -lm -fopenmp
-OFLAGS=-ansi -I ~/.include/
+FILE=test
+CC=g++-5
+CFLAGS=-O3 -Wall -Werror -pedantic -ansi -lm -fopenmp -I ~/.include/
+COMPILE_COMMAND=$(CC) $(CFLAGS)
+OUTPUT=test
 
 all: setup ${FILE} 
+	$(COMPILE_COMMAND) -o $(OUTPUT) $(FILE).cpp Materials.cpp
 
 setup: 
 	export OMP_NUM_THREADS=4
 	export OMP_SCHEDULE=static
-
-%.o: %.cpp
-	${CXX} -x c++ -c $< -o $@ ${OFLAGS}
-
-${FILE}: ${FILE}.o Materials.o
-	${CXX} $^ -o $@ ${XXFLAGS}
 
 clean: 
 	find . -name '*~' -delete
