@@ -155,8 +155,11 @@ void Material::force(double dt)
 void Material::slic(double dt)
 {
     int L, R;
-    SimpleArray< double, 3> xi_L, xi_R, Q_L_plus, Q_R_plus, Q_L_0, Q_R_0,
-        F_L_plus, F_R_plus, F_L_0, F_R_0, Q_L, Q_R, Q_0, F_L, F_R, F_0;
+    SimpleArray< double, 3> xi_L, xi_R, 
+        Q_L_plus, Q_R_plus, Q_L_0, Q_R_0,
+        F_L_plus, F_R_plus, F_L_0, F_R_0, 
+        Q_L, Q_R, Q_0, 
+        F_L, F_R, F_0;
 
     for(unsigned i = 0; i < nCells + 1; i++)
     {
@@ -184,8 +187,8 @@ void Material::slic(double dt)
         flux(Q_R_0, F_R_0);
 
         // Evolve by time 0.5 * dt
-        Q_L = Q_L_plus + 0.5 * dt / dx * (F_L_plus - F_R_plus);
-        Q_R = Q_R_0 + 0.5 * dt / dx * (F_L_0 - F_R_0);
+        Q_R = Q_L_plus + 0.5 * dt / dx * (F_L_plus - F_R_plus);
+        Q_L = Q_R_0 + 0.5 * dt / dx * (F_L_0 - F_R_0);
 
         // FORCE flux
         flux(Q_L, F_L);
@@ -234,7 +237,7 @@ void Material::output()
 }
 
 double slopeLimiter(double q_min, double q_0, double q_plus)
-{
+{ // TODO: move to different file
     double Delta_L, Delta_R; 
 
     if(fabs(q_0 - q_min) < 1.0e-16) 
@@ -257,18 +260,23 @@ double slopeLimiter(double q_min, double q_0, double q_plus)
     
     double r = Delta_L / Delta_R;
 
-    // minbee
+    // superbee
     if(r <= 0.0)
     {
         return 0.0;
     }
+    else if(r <= 0.5) 
+    {
+        return 2.0 * r; 
+    }
     else if(r <= 1.0) 
     {
-        return r; 
+        return 1.0; 
     }
     else 
-    {
-        return 1.0;
+    { //TODO: std::min_element()
+        return (2.0 < r) ?  (2.0 < 2.0 / (1.0 + r) ? 2.0 : 2.0 / (1.0 + r)) :
+            (r < 2.0 / (1.0 + r) ? r : 2.0 / (1.0 + r));
     }
 }
 
