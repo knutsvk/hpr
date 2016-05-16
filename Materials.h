@@ -12,8 +12,6 @@
 /* TODO
  * make classes which inherit Material: Fluid and Solid
  * don't save xDirFlux?
- * parallelize with openmp
- * implement SLIC
  */
 
 class Material
