@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
         }
 
         state.transmissiveBCs();
-        state.force(dt);
+        state.slic(dt);
         state.advancePDE(dt);
 
         t += dt;
