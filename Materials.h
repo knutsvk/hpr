@@ -9,7 +9,8 @@
 
 /* TODO
  * make classes which inherit Material: Fluid and Solid
- * don't save xDirFlux
+ * don't save xDirFlux?
+ * parallelize with openmp
  * implement SLIC
  */
 
@@ -36,7 +37,6 @@ class Material
         std::vector<double> getVelocity();
         std::vector<double> getPressure();
         std::vector<double> getInternalEnergy();
-        std::vector<double> getSoundSpeed();
         double timeStep(const double c_CFL);
 
         void initialize(const double interfacePos, const double density[2],
@@ -44,8 +44,11 @@ class Material
         void transmissiveBCs();
         void reflectiveBCs();
         void force(double dt);
+        void slic(double dt);
         void advancePDE(const double dt);
         void output();
 };
+
+double slopeLimiter(double q_minus, double q_0, double q_plus);
 
 #endif
