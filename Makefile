@@ -4,7 +4,7 @@ CFLAGS=-O3 -Wall -Werror -pedantic -ansi -lm -fopenmp -I ~/.include/
 COMPILE_COMMAND=$(CC) $(CFLAGS)
 OUTPUT=test
 
-all: setup ${FILE} 
+all: setup ${FILE}.cpp
 	$(COMPILE_COMMAND) -o $(OUTPUT) $(FILE).cpp Materials.cpp
 
 setup: 
