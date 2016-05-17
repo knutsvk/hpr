@@ -11,7 +11,10 @@
 
 /* TODO
  * make classes which inherit Material: Fluid and Solid
- * don't save xDirFlux?
+ * allow for sources
+ * extend to 2D
+ * add non-conservative
+ * try viscous
  */
 
 class Material
