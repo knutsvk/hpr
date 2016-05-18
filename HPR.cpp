@@ -1,16 +1,16 @@
-#ifndef __MATERIALS_CPP
-#define __MATERIALS_CPP
+#ifndef __HPR_CPP
+#define __HPR_CPP
 
-#include "Materials.h"
+#include "HPR.h"
 
-void Material::flux(const SimpleArray< double, 3 >& Q, SimpleArray< double, 3 >& F)
+void HyperbolicPeshkovRomenski::flux(const SimpleArray< double, 3 >& Q, SimpleArray< double, 3 >& F)
 {
     F[0] = Q[1];
     F[1] = (gamma - 1.0) * Q[2] + 0.5 * (3.0 - gamma) * Q[1] * Q[1] / Q[0];
     F[2] = (gamma * Q[2] - 0.5 * (gamma - 1.0) * Q[1] * Q[1] / Q[0]) * Q[1] / Q[0];
 }
 
-Material::Material(const int _nCells, const double _domain[2])
+HyperbolicPeshkovRomenski::HyperbolicPeshkovRomenski(const int _nCells, const double _domain[2])
 {
     nCells = _nCells;
     gamma = 1.4;
@@ -26,7 +26,7 @@ Material::Material(const int _nCells, const double _domain[2])
     xDirFlux.resize(nCells + 1);
 }
 
-std::vector<double> Material::getDensity()
+std::vector<double> HyperbolicPeshkovRomenski::getDensity()
 {
     std::vector<double> rho(nCells + 2 * nGhostCells);
 #pragma omp parallel for 
@@ -37,7 +37,7 @@ std::vector<double> Material::getDensity()
     return rho;
 }
 
-std::vector<double> Material::getVelocity()
+std::vector<double> HyperbolicPeshkovRomenski::getVelocity()
 {
     std::vector<double> u(nCells + 2 * nGhostCells);
 #pragma omp parallel for 
@@ -48,7 +48,7 @@ std::vector<double> Material::getVelocity()
     return u;
 }
 
-std::vector<double> Material::getPressure()
+std::vector<double> HyperbolicPeshkovRomenski::getPressure()
 {
     std::vector<double> p(nCells + 2 * nGhostCells);
 #pragma omp parallel for 
@@ -60,7 +60,7 @@ std::vector<double> Material::getPressure()
     return p;
 }
 
-std::vector<double> Material::getInternalEnergy()
+std::vector<double> HyperbolicPeshkovRomenski::getInternalEnergy()
 {
     std::vector<double> e(nCells + 2 * nGhostCells);
 #pragma omp parallel for 
@@ -72,7 +72,7 @@ std::vector<double> Material::getInternalEnergy()
     return e;
 }
 
-double Material::timeStep(const double c_CFL)
+double HyperbolicPeshkovRomenski::timeStep(const double c_CFL)
 {
     std::vector<double> S(nCells + 2 * nGhostCells); 
     double u;
@@ -88,7 +88,7 @@ double Material::timeStep(const double c_CFL)
     return c_CFL * dx / *std::max_element(S.begin(), S.end());
 }
 
-void Material::initialize(const double initDiscontPos, const double density[2],
+void HyperbolicPeshkovRomenski::initialize(const double initDiscontPos, const double density[2],
         const double velocity[2], const double pressure[2])
 {
     double x;
@@ -114,7 +114,7 @@ void Material::initialize(const double initDiscontPos, const double density[2],
     }
 }
 
-void Material::transmissiveBCs()
+void HyperbolicPeshkovRomenski::transmissiveBCs()
 {
     for(unsigned i = 0; i < nGhostCells; i++)
     {
@@ -124,7 +124,7 @@ void Material::transmissiveBCs()
     }
 }
 
-void Material::reflectiveBCs()
+void HyperbolicPeshkovRomenski::reflectiveBCs()
 {
     for(unsigned i = 0; i < nGhostCells; i++)
     {
@@ -136,7 +136,7 @@ void Material::reflectiveBCs()
     }
 }
 
-void Material::force(double dt)
+void HyperbolicPeshkovRomenski::force(double dt)
 {
     int L, R;
     SimpleArray< double, 3> F_L, F_R, Q_0, F_0;
@@ -159,7 +159,7 @@ void Material::force(double dt)
     }
 }
 
-void Material::slic(double dt)
+void HyperbolicPeshkovRomenski::slic(double dt)
 {
     int L, R;
     SimpleArray< double, 3> xi_L, xi_R, 
@@ -211,7 +211,7 @@ void Material::slic(double dt)
     }
 }
 
-void Material::advancePDE(const double dt)
+void HyperbolicPeshkovRomenski::advancePDE(const double dt)
 {
     std::vector< SimpleArray< double, 3 > > tempVars(nCells + 2 * nGhostCells);
 #pragma omp parallel for 
@@ -230,7 +230,7 @@ void Material::advancePDE(const double dt)
     } 
 }
 
-void Material::output()
+void HyperbolicPeshkovRomenski::output()
 {
     std::vector<double> rho, u, p, e;
     rho = getDensity();

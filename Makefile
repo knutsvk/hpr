@@ -1,11 +1,10 @@
-FILE=test
+FILE=Toro1
 CC=g++-5
 CFLAGS=-O3 -Wall -Werror -pedantic -ansi -lm -fopenmp -I ~/.include/
 COMPILE_COMMAND=$(CC) $(CFLAGS)
-OUTPUT=test
 
 all: setup ${FILE}.cpp
-	$(COMPILE_COMMAND) -o $(OUTPUT) $(FILE).cpp Materials.cpp
+	$(COMPILE_COMMAND) -o $(FILE) $(FILE).cpp HPR.cpp
 
 setup: 
 	export OMP_NUM_THREADS=4

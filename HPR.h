@@ -1,5 +1,5 @@
-#ifndef __MATERIALS_H
-#define __MATERIALS_H
+#ifndef __HPR_H
+#define __HPR_H
 
 #include <algorithm>
 #include <iostream>
@@ -17,7 +17,7 @@
  * try viscous
  */
 
-class Material
+class HyperbolicPeshkovRomenski
 {
     private: 
         unsigned nCells;
@@ -33,8 +33,8 @@ class Material
         void flux(const SimpleArray< double, 3 >& Q, SimpleArray< double, 3 >& F);
 
     public:
-        Material(const int _nCells, const double _domain[2]);
-        virtual ~Material(){}
+        HyperbolicPeshkovRomenski(const int _nCells, const double _domain[2]);
+        virtual ~HyperbolicPeshkovRomenski(){}
 
         std::vector<double> getDensity();
         std::vector<double> getVelocity();
