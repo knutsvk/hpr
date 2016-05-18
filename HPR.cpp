@@ -350,7 +350,44 @@ void HyperbolicPeshkovRomenski::output()
     }
 }
 
-HPR_Fluid 
+HPR_Fluid::HPR_Fluid( double _shearSoundSpeed, double _strainDissipationTime,
+        double _referenceDensity, int _nCells, double _domain[2], 
+        double _gamma) : 
+    HyperbolicPeshkovRomenski( _shearSoundSpeed, _strainDissipationTime,
+            _referenceDensity, _nCells, _domain[2]) 
+{
+    gamma = _gamma;
+}
+
+double HPR_Fluid::getPressure( const SimpleArray< double, 14 >& Q )
+{
+    // TODO: on the paper 
+}
+
+double HPR_Fluid::microEnergy( double density, double pressure )
+{
+    // TODO: on the paper
+}
+
+HPR_Solid::HPR_Solid( double _shearSoundSpeed, double _strainDissipationTime,
+        double _referenceDensity, int _nCells, double _domain[2], double _c_0,
+        double _Gamma_0 ) : 
+    HyperbolicPeshkovRomenski( _shearSoundSpeed, _strainDissipationTime,
+            _referenceDensity, _nCells, _domain[2]) 
+{
+    c_0 = _c_0;
+    Gamma_0 = _Gamma_0;
+}
+
+double HPR_Solid::getPressure( const SimpleArray< double, 14 >& Q )
+{
+    // TODO: on the paper 
+}
+
+double HPR_Solid::microEnergy( double density, double pressure )
+{
+    // TODO: on the paper
+}
 
 double slopeLimiter(double q_min, double q_0, double q_plus)
 { // TODO: move to different file
