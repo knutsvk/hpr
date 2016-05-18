@@ -16,7 +16,7 @@ int main(int argc, char* argv[])
 
     double tStop = 0.25;
 
-    HyperbolicPeshkovRomenski state(N, dom);
+    HPR_Fluid state(N, dom);
     state.initialize(x0, rho, u, p);
 
     double t = 0.0;
