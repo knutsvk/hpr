@@ -14,7 +14,6 @@
 #include "SimpleArray.h"
 
 /* TODO
- * change state_type in odeint
  * add non-conservative
  * extend to 2D, test with cylindrical explosion
  * viscous test cases
