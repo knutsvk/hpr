@@ -29,9 +29,10 @@ class HyperbolicPeshkovRomenski
         double c_s; // shear wave speed
         double rho_0; // reference density 
 
-        unsigned nCellsX; // amount of cells in the x-direction
-        unsigned nCellsY; // amount of cells in the y-direction
-        const static unsigned nGhostCells = 2; // ghost cells outside computational domain
+        int nCellsX; // amount of cells in the x-direction
+        int nCellsY; // amount of cells in the y-direction
+        int nGhostCells; // ghost cells outside computational domain
+        int nCellsTot;
         double domain[4]; // xmin = domain[0], xmax = domain[1], ymin = domain[2], ...
         double dx; // cell width in x-direction
         double dy; // cell width in y-direction
@@ -42,6 +43,16 @@ class HyperbolicPeshkovRomenski
                 SimpleArray< double, 14 >& F );
         void yFlux( const SimpleArray< double, 14 >& Q, 
                 SimpleArray< double, 14 >& G );
+        void forceFlux( double dt, double dx, int dir, 
+                const SimpleArray< double, 14 >& Q_L, 
+                const SimpleArray< double, 14 >& Q_R, 
+                SimpleArray< double, 14 >& F );
+        void slicFlux ( double dt, double dx, int dir, 
+                const SimpleArray< double, 14 >& Q_2L, 
+                const SimpleArray< double, 14 >& Q_L, 
+                const SimpleArray< double, 14 >& Q_R, 
+                const SimpleArray< double, 14 >& Q_2R, 
+                SimpleArray< double, 14 >& F );
 
     public:
         HyperbolicPeshkovRomenski( 
@@ -71,9 +82,8 @@ class HyperbolicPeshkovRomenski
                 
         void transmissiveBCs();
         void reflectiveBCs();
-        void force( double dt );
-        void slic( double dt );
-        void advancePDE( double dt );
+        void xSweep( double dt );
+        void ySweep( double dt );
         void renormalizeDistortion();
         void output();
 };
