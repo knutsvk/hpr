@@ -14,8 +14,8 @@
 #include "SimpleArray.h"
 
 /* TODO
- * add non-conservative
  * extend to 2D, test with cylindrical explosion
+ * add non-conservative
  * viscous test cases
  *  - first problem of stokes
  *  - laminar boundary layer
