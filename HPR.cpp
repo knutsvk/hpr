@@ -47,8 +47,8 @@ void HyperbolicPeshkovRomenski::yFlux(
     double p = getPressure( Q );
     
     G[0] = rho * u[1];
-    G[1] = rho * u[1] * u[0] - sigma(0, 1) + p;
-    G[2] = rho * u[1] * u[1] - sigma(1, 1);
+    G[1] = rho * u[1] * u[0] - sigma(0, 1);
+    G[2] = rho * u[1] * u[1] - sigma(1, 1) + p;
     G[3] = rho * u[1] * u[2] - sigma(2, 1);
     G[4] = 0.0;
     G[5] = A( 0, 0 ) * u[0] + A(0, 1) * u[1] + A(0, 2) * u [2];
