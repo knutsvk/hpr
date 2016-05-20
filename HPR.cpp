@@ -386,26 +386,12 @@ double HPR_Fluid::getTimeStep( const double c_CFL )
 
 void HPR_Fluid::integrateODE( double dt )
 {
-    state_type tmp;
 
-//#pragma omp parallel for private( tmp )
+//#pragma omp parallel for 
     for( unsigned i = nGhostCells; i < nCells + nGhostCells; i++ )
     {
-        tmp.resize(14);
-        assert( tmp.size() == consVars[i].size() );
-
-        for( unsigned j = 0; j < 14; j++ )
-        {
-            tmp[j] = consVars[i][j];
-        }
-
         integrate_adaptive( make_controlled( 1.0e-12, 1.0e-12, stepper_type() ), 
-                HPR_ODE(tau, rho_0), tmp, 0.0, 0.0 + dt, 1.0e-3 * dt );
-
-        for( unsigned j = 0; j < 14; j++ )
-        {
-            consVars[i][j] = tmp[j]; 
-        }
+                HPR_ODE(tau, rho_0), consVars[i], 0.0, 0.0 + dt, 1.0e-3 * dt );
     }
 }
 

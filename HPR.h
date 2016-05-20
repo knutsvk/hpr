@@ -116,8 +116,7 @@ class HPR_Solid: public HyperbolicPeshkovRomenski
 };
 
 // ODE struct
-// TODO: Use SimpleArray< double, 14 > as state_type
-typedef std::vector< double > state_type; 
+typedef SimpleArray< double, 14 > state_type;
 typedef boost::numeric::odeint::runge_kutta_dopri5< state_type > stepper_type;
 
 struct HPR_ODE
