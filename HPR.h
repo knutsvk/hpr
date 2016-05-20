@@ -34,9 +34,18 @@ class HyperbolicPeshkovRomenski
         double dx; // cell width
 
         std::vector< SimpleArray< double, 14 > > consVars; // conserved variables in each cell
-        std::vector< SimpleArray< double, 14 > > xDirFlux; // fluxes at each cell boundary 
 
         void flux( const SimpleArray< double, 14 >& Q, 
+                SimpleArray< double, 14 >& F );
+        void forceFlux( double dt, double dx, 
+                const SimpleArray< double, 14 >& Q_L, 
+                const SimpleArray< double, 14 >& Q_R, 
+                SimpleArray< double, 14 >& F );
+        void slicFlux ( double dt, double dx, 
+                const SimpleArray< double, 14 >& Q_2L, 
+                const SimpleArray< double, 14 >& Q_L, 
+                const SimpleArray< double, 14 >& Q_R, 
+                const SimpleArray< double, 14 >& Q_2R, 
                 SimpleArray< double, 14 >& F );
 
     public:
@@ -67,8 +76,6 @@ class HyperbolicPeshkovRomenski
                 
         void transmissiveBCs();
         void reflectiveBCs();
-        void force( double dt );
-        void slic( double dt );
         void advancePDE( double dt );
         void renormalizeDistortion();
         void output();

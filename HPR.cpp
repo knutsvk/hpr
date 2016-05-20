@@ -34,6 +34,61 @@ void HyperbolicPeshkovRomenski::flux(
         - sigma(1, 0) * u[1] - sigma(2, 0) * u[2];
 }
 
+void HyperbolicPeshkovRomenski::forceFlux( double dt, double dx, 
+        const SimpleArray< double, 14 >& Q_L, 
+        const SimpleArray< double, 14 >& Q_R, 
+        SimpleArray< double, 14 >& F )
+{
+    SimpleArray< double, 14 > F_L, F_R, Q_0, F_0;
+
+    flux( Q_L, F_L );
+    flux( Q_R, F_R );
+
+    Q_0 = 0.5 * ( Q_L + Q_R )
+        + 0.5 * dt / dx * ( F_L - F_R );
+    flux( Q_0, F_0 );
+
+    F = 0.5 * ( F_0 + 0.5 * ( F_L + F_R ) ) 
+        + 0.25 * dx / dt * ( Q_L - Q_R ); 
+}
+
+void HyperbolicPeshkovRomenski::slicFlux( double dt, double dx, 
+        const SimpleArray< double, 14 >& Q_2L, 
+        const SimpleArray< double, 14 >& Q_L, 
+        const SimpleArray< double, 14 >& Q_R, 
+        const SimpleArray< double, 14 >& Q_2R, 
+        SimpleArray< double, 14 >& F )
+{
+    SimpleArray< double, 14 > xi_L, xi_R, 
+        Q_L_plus, Q_R_plus, Q_L_0, Q_R_0,
+        F_L_plus, F_R_plus, F_L_0, F_R_0,
+        Q_L_bar, Q_R_bar; 
+
+    // Calculate TVD slope limiters
+    for( unsigned j = 0; j < 14; j++ )
+    {
+        xi_L[j] = slopeLimiter( Q_2L[j], Q_L[j], Q_R[j] );
+        xi_R[j] = slopeLimiter( Q_L[j], Q_R[j], Q_2R[j] );
+    }
+
+    // Boundary extrapolated values
+    Q_L_plus = Q_R - 0.25 * xi_R * ( Q_2R - Q_L );
+    Q_R_plus = Q_R + 0.25 * xi_R * ( Q_2R - Q_L );
+    Q_L_0 = Q_L - 0.25 * xi_L * ( Q_R - Q_2L );
+    Q_R_0 = Q_L + 0.25 * xi_L * ( Q_R - Q_2L );
+
+    flux( Q_L_plus, F_L_plus );
+    flux( Q_R_plus, F_R_plus );
+    flux( Q_L_0, F_L_0 );
+    flux( Q_R_0, F_R_0 );
+
+    // Evolve by time 0.5 * dt
+    Q_L_bar = Q_L_plus + 0.5 * dt / dx * ( F_L_plus - F_R_plus );
+    Q_R_bar = Q_R_0 + 0.5 * dt / dx * ( F_L_0 - F_R_0 );
+
+    forceFlux( dt, dx, Q_R_bar, Q_L_bar, F );
+}
+
 HyperbolicPeshkovRomenski::HyperbolicPeshkovRomenski( 
         double _shearSoundSpeed, double _referenceDensity, 
         int _nCells, double _domain[2] )
@@ -50,7 +105,6 @@ HyperbolicPeshkovRomenski::HyperbolicPeshkovRomenski(
     dx = ( domain[1] - domain[0] ) / nCells;
 
     consVars.resize( nCells + 2 * nGhostCells );
-    xDirFlux.resize( nCells + 1 );
 }
 
 double HyperbolicPeshkovRomenski::getDensity( 
@@ -180,81 +234,6 @@ void HyperbolicPeshkovRomenski::reflectiveBCs()
     }
 }
 
-void HyperbolicPeshkovRomenski::force( double dt )
-{
-    int L, R;
-    SimpleArray< double, 14 > F_L, F_R, Q_0, F_0;
-
-#pragma omp parallel for private( L, R, F_L, F_R, Q_0, F_0 )
-    for( unsigned i = 0; i < nCells + 1; i++ )
-    {
-        L = i + nGhostCells - 1;
-        R = i + nGhostCells;
-
-        flux( consVars[L], F_L );
-        flux( consVars[R], F_R );
-
-        Q_0 = 0.5 * ( consVars[L] + consVars[R] )
-            + 0.5 * dt / dx * ( F_L - F_R );
-        flux( Q_0, F_0 );
-
-        xDirFlux[i] = 0.5 * ( F_0 + 0.5 * ( F_L + F_R ) ) 
-            + 0.25 * dx / dt * ( consVars[L] - consVars[R] ); 
-    }
-}
-
-void HyperbolicPeshkovRomenski::slic( double dt )
-{
-    int L, R;
-    SimpleArray< double, 14 > xi_L, xi_R, 
-        Q_L_plus, Q_R_plus, Q_L_0, Q_R_0,
-        F_L_plus, F_R_plus, F_L_0, F_R_0, 
-        Q_L, Q_R, Q_0, 
-        F_L, F_R, F_0;
-
-#pragma omp parallel for private( L, R, xi_L, xi_R, Q_L_plus, Q_R_plus, Q_L_0,\
-        Q_R_0, F_L_plus, F_R_plus, F_L_0, F_R_0, Q_L, Q_R, Q_0, F_L, F_R, F_0 )
-
-    for( unsigned i = 0; i < nCells + 1; i++ )
-    {
-        L = i + nGhostCells - 1;
-        R = i + nGhostCells;
-
-        // Calculate TVD slope limiters
-        for( unsigned j = 0; j < 14; j++ )
-        {
-            xi_L[j] = slopeLimiter( consVars[L - 1][j], consVars[L][j],
-                    consVars[R][j] );
-            xi_R[j] = slopeLimiter( consVars[L][j], consVars[R][j], 
-                    consVars[R + 1][j] );
-        }
-
-        // Boundary extrapolated values
-        Q_L_plus = consVars[R] - 0.25 * xi_R * ( consVars[R + 1] - consVars[L] );
-        Q_R_plus = consVars[R] + 0.25 * xi_R * ( consVars[R + 1] - consVars[L] );
-        Q_L_0 = consVars[L] - 0.25 * xi_L * ( consVars[R] - consVars[L - 1] );
-        Q_R_0 = consVars[L] + 0.25 * xi_L * ( consVars[R] - consVars[L - 1] );
-
-        flux( Q_L_plus, F_L_plus );
-        flux( Q_R_plus, F_R_plus );
-        flux( Q_L_0, F_L_0 );
-        flux( Q_R_0, F_R_0 );
-
-        // Evolve by time 0.5 * dt
-        Q_R = Q_L_plus + 0.5 * dt / dx * ( F_L_plus - F_R_plus );
-        Q_L = Q_R_0 + 0.5 * dt / dx * ( F_L_0 - F_R_0 );
-
-        // FORCE flux
-        flux( Q_L, F_L );
-        flux( Q_R, F_R );
-        Q_0 = 0.5 * ( Q_L + Q_R ) 
-            + 0.5 * dt / dx * ( F_L - F_R );
-        flux( Q_0, F_0 );
-        xDirFlux[i] = 0.5 * ( F_0 + 0.5 * ( F_L + F_R ) ) 
-            + 0.25 * dx / dt * ( Q_L - Q_R ); 
-    }
-}
-
 void HyperbolicPeshkovRomenski::advancePDE( double dt )
 {
     std::vector< SimpleArray< double, 14 > > tempVars( nCells + 2 * nGhostCells );
@@ -263,14 +242,19 @@ void HyperbolicPeshkovRomenski::advancePDE( double dt )
     {
         tempVars[i] = consVars[i];
     } 
-    
-    int L, R;
+
+    SimpleArray< double, 14 > F_L;
+    SimpleArray< double, 14 > F_R;
+
+#pragma omp parallel for private( F_L, F_R )
     for( unsigned i = nGhostCells; i < nCells + nGhostCells; i++ )
     {
-        L = i - nGhostCells;
-        R = i - nGhostCells + 1;
+        slicFlux( dt, dx, tempVars[i - 2], tempVars[i - 1], tempVars[i],
+                tempVars[i + 1], F_L);
+        slicFlux( dt, dx, tempVars[i - 1], tempVars[i], tempVars[i + 1],
+                tempVars[i + 2], F_R);
         consVars[i] = tempVars[i] + dt / dx * 
-            ( xDirFlux[L] - xDirFlux[R] );
+            ( F_L - F_R );
     } 
 }
 

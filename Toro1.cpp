@@ -69,8 +69,6 @@ int main( int argc, char* argv[] )
 
         state.integrateODE( 0.5 * dt );
 
-        state.slic( dt );
-
         state.advancePDE( dt );
 
         state.integrateODE( 0.5 * dt );
