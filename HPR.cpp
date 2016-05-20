@@ -3,17 +3,19 @@
 
 #include "HPR.h"
 
+/* BASE CLASS FOR HPR MATERIALS */
+
 void HyperbolicPeshkovRomenski::flux( 
         const SimpleArray< double, 14 >& Q, 
         SimpleArray< double, 14 >& F )
 {
     double rho = getDensity( Q );
-    double u [3] = getVelocity( Q );
-    Matrix3d A = getDistortion( Q );
+    SimpleArray< double, 3 > u = getVelocity( Q );
+    Eigen::Matrix3d A = getDistortion( Q );
     double E = getEnergy( Q );
 
-    Matrix3d sigma = shearStress( Q );
-    double p = pressure( Q );
+    Eigen::Matrix3d sigma = getShearStress( Q );
+    double p = getPressure( Q );
     
     F[0] = rho * u[0];
     F[1] = rho * u[0] * u[0] - sigma(0, 0) + p;
@@ -33,11 +35,10 @@ void HyperbolicPeshkovRomenski::flux(
 }
 
 HyperbolicPeshkovRomenski::HyperbolicPeshkovRomenski( 
-        double _shearSoundSpeed, double _strainDissipationTime, 
-        double _referenceDensity, int _nCells, double _domain[2] )
+        double _shearSoundSpeed, double _referenceDensity, 
+        int _nCells, double _domain[2] )
 {
     c_s = _shearSoundSpeed; 
-    tau = _strainDissipationTime; 
     rho_0 = _referenceDensity;
     nCells = _nCells;
 
@@ -58,21 +59,21 @@ double HyperbolicPeshkovRomenski::getDensity(
     return Q[0];
 }
 
-double* HyperbolicPeshkovRomenski::getVelocity( 
+SimpleArray< double, 3 > HyperbolicPeshkovRomenski::getVelocity( 
         const SimpleArray< double, 14 >& Q )
 {
-    double u[3]; 
+    SimpleArray< double, 3 > u; 
     for( unsigned i = 0; i < 3; i++ ) 
     { 
-        u[i] = Q[i + 1] / Q[0];
+        u[i] = Q[i + 1];
     }
-    return u[0];
+    return u / Q[0];
 }
 
 Eigen::Matrix3d HyperbolicPeshkovRomenski::getDistortion( 
         const SimpleArray< double, 14 >& Q )
 {
-    Matrix3d A;
+    Eigen::Matrix3d A;
     for( unsigned i = 0; i < 3; i++ )
     {
         for( unsigned j = 0; j < 3; j++ )
@@ -99,49 +100,20 @@ Eigen::Matrix3d HyperbolicPeshkovRomenski::getShearStress(
     return - rho * c_s * c_s * G * devG;
 }
 
-Eigen::Matrix3d HyperbolicPeshkovRomenski::getSource(
-        const SimpleArray< double, 14 >& Q )
+double HyperbolicPeshkovRomenski::mesoEnergy( Eigen::Matrix3d distortion )
 {
-    double nu = getDensity( Q ) / rho_0;
-    Eigen::Matrix3d A = getDistortion( Q );
-    Eigen::Matrix3d G = A.transpose() * A;
-    Eigen::Matrix3d devG = G - G.trace() * Eigen::Matrix3d::Identity() / 3.0;
-    return - 3.0 * pow(nu, 5.0 / 3.0) * A * devG / tau;
-}
-
-double mesoEnergy( Matrix3d distortion )
-{
-    Matrix3d G = distortion.trace() * distortion;
+    Eigen::Matrix3d G = distortion.trace() * distortion;
     return 0.25 * c_s * c_s * ( G.trace() - ( G * G ).trace() / 3.0 );
 }
 
-double macroEnergy( double* velocity )
+double HyperbolicPeshkovRomenski::macroEnergy( SimpleArray< double, 3 > u )
 {
     return 0.5 * ( u[0] * u[0] + u[1] * u[1] + u[2] * u[2] );
 }
 
-double HyperbolicPeshkovRomenski::timeStep( const double c_CFL )
-{
-    std::vector<double> S( nCells + 2 * nGhostCells ); 
-    double rho;
-    double* u; 
-    double p;
-
-#pragma omp parallel for private( rho, u, p )
-    for( unsigned i = 0; i < nCells + 2 * nGhostCells; i++ )
-    {
-        rho = getDensity( consVars[i] );
-        u = getVelocity( consVars[i] );
-        p = getPressure( consVars[i] );
-        S[i] = fabs( u[0] ) + sqrt( gamma * p / rho + 4.0 * c_s * c_s / 3.0 );
-    }
-
-    return c_CFL * dx / *std::max_element( S.begin(), S.end() );
-}
-
 void HyperbolicPeshkovRomenski::initialize( double initDiscontPos, 
         double density_L, double density_R, 
-        double* velocity_L, double* velocity_R, 
+        SimpleArray< double, 3 > velocity_L, SimpleArray< double, 3 > velocity_R, 
         Eigen::Matrix3d distortion_L, Eigen::Matrix3d distortion_R,
         double pressure_L, double pressure_R )
 {
@@ -162,7 +134,7 @@ void HyperbolicPeshkovRomenski::initialize( double initDiscontPos,
                     consVars[i][4 + 3 * j + k] = distortion_L(j, k);
                 }
             }
-            consVars[i][13] = rho_L * 
+            consVars[i][13] = density_L * 
                 ( microEnergy( density_L, pressure_L ) +
                   mesoEnergy( distortion_L ) + 
                   macroEnergy( velocity_L ) );
@@ -178,7 +150,7 @@ void HyperbolicPeshkovRomenski::initialize( double initDiscontPos,
                     consVars[i][4 + 3 * j + k] = distortion_R(j, k);
                 }
             }
-            consVars[i][13] = rho_R * 
+            consVars[i][13] = density_R * 
                 ( microEnergy( density_R, pressure_R ) +
                   mesoEnergy( distortion_R ) + 
                   macroEnergy( velocity_R ) );
@@ -304,11 +276,15 @@ void HyperbolicPeshkovRomenski::advancePDE( double dt )
 
 void HyperbolicPeshkovRomenski::renormalizeDistortion()
 {
+    double rho;
+    Eigen::Matrix3d A; 
+    double scaleFactor; 
+#pragma omp parallel for private( rho, A, scaleFactor )
     for( unsigned i = 0; i < nCells + 2 * nGhostCells; i++ )
     {
-        double rho = getDensity( consVars[i] );
-        Matrix3d A = getDistortion( consVars[i] );
-        double scaleFactor = pow( rho / ( rho_0 * A.determinant() ), 1.0 / 3.0 );
+        rho = getDensity( consVars[i] );
+        A = getDistortion( consVars[i] );
+        scaleFactor = pow( rho / ( rho_0 * A.determinant() ), 1.0 / 3.0 );
         A *= scaleFactor;
         for( unsigned j = 0; j < 3; j++ )
         {
@@ -322,11 +298,10 @@ void HyperbolicPeshkovRomenski::renormalizeDistortion()
 
 void HyperbolicPeshkovRomenski::output()
 {
-    double x; 
     double rho; 
-    double u[3];
+    SimpleArray< double, 3 > u;
     double p; 
-    Matrix3d sigma;
+    Eigen::Matrix3d sigma;
 
     // TODO: add entropy
     //
@@ -350,87 +325,213 @@ void HyperbolicPeshkovRomenski::output()
     }
 }
 
-HPR_Fluid::HPR_Fluid( double _shearSoundSpeed, double _strainDissipationTime,
-        double _referenceDensity, int _nCells, double _domain[2], 
-        double _gamma) : 
-    HyperbolicPeshkovRomenski( _shearSoundSpeed, _strainDissipationTime,
-            _referenceDensity, _nCells, _domain[2]) 
+/* CLASS HPR_FLUID */
+
+HPR_Fluid::HPR_Fluid( double _shearSoundSpeed, double _referenceDensity, 
+        int _nCells, double _domain[2], 
+        double _gamma, double _strainDissipationTime ) : 
+    HyperbolicPeshkovRomenski( _shearSoundSpeed, _referenceDensity, 
+            _nCells, _domain) 
 {
     gamma = _gamma;
+    tau = _strainDissipationTime;
 }
 
 double HPR_Fluid::getPressure( const SimpleArray< double, 14 >& Q )
 {
-    // TODO: on the paper 
+    double rho = getDensity( Q );
+    SimpleArray< double, 3 > u = getVelocity( Q );
+    Eigen::Matrix3d A = getDistortion( Q );
+    double E = getEnergy( Q );
+    
+    double E_2 = mesoEnergy( A );
+    double E_3 = macroEnergy( u );
+
+    return ( gamma - 1.0 ) * rho * ( E - E_2 - E_3 );
+}
+
+Eigen::Matrix3d HPR_Fluid::getSource( const SimpleArray< double, 14 >& Q )
+{
+    double nu = getDensity( Q ) / rho_0;
+    Eigen::Matrix3d A = getDistortion( Q );
+    Eigen::Matrix3d G = A.transpose() * A;
+    Eigen::Matrix3d devG = G - G.trace() * Eigen::Matrix3d::Identity() / 3.0;
+    return - 3.0 * pow(nu, 5.0 / 3.0) * A * devG / tau;
 }
 
 double HPR_Fluid::microEnergy( double density, double pressure )
 {
-    // TODO: on the paper
+    return pressure / ( ( gamma - 1.0 ) * density );
 }
 
-HPR_Solid::HPR_Solid( double _shearSoundSpeed, double _strainDissipationTime,
-        double _referenceDensity, int _nCells, double _domain[2], double _c_0,
-        double _Gamma_0 ) : 
-    HyperbolicPeshkovRomenski( _shearSoundSpeed, _strainDissipationTime,
-            _referenceDensity, _nCells, _domain[2]) 
+double HPR_Fluid::getTimeStep( const double c_CFL )
+{
+    std::vector< double > S( nCells + 2 * nGhostCells ); 
+    double rho;
+    SimpleArray< double, 3 > u; 
+    double p;
+
+#pragma omp parallel for private( rho, u, p )
+    // TODO: reduce for loop with max
+    for( unsigned i = 0; i < nCells + 2 * nGhostCells; i++ )
+    {
+        rho = getDensity( consVars[i] );
+        u = getVelocity( consVars[i] );
+        p = getPressure( consVars[i] );
+        S[i] = fabs( u[0] ) + sqrt( gamma * p / rho + 4.0 * c_s * c_s / 3.0 );
+    }
+
+    return c_CFL * dx / *std::max_element( S.begin(), S.end() );
+}
+
+void HPR_Fluid::integrateODE( double dt )
+{
+    state_type tmp(14);
+
+// TODO: #pragma omp parallel for private( tmp )
+    for( unsigned i = nGhostCells; i < nCells + nGhostCells; i++ )
+    {
+        assert( tmp.size() == consVars[i].size() );
+
+        for( unsigned j = 0; j < 14; j++ )
+        {
+            tmp[j] = consVars[i][j];
+        }
+
+        integrate_adaptive( make_controlled( 1.0e-6, 1.0e-6, stepper_type() ), 
+                HPR_ODE(tau, rho_0), tmp, 0.0, 0.0 + dt, 1.0e-2 * dt );
+
+        for( unsigned j = 0; j < 14; j++ )
+        {
+            consVars[i][j] = tmp[j]; 
+        }
+    }
+}
+
+/* CLASS HPR_SOLID */
+
+HPR_Solid::HPR_Solid( double _shearSoundSpeed, double _referenceDensity, 
+        int _nCells, double _domain[2], 
+        double _c_0, double _Gamma_0, double _s_H ) : 
+    HyperbolicPeshkovRomenski( _shearSoundSpeed, _referenceDensity, 
+            _nCells, _domain) 
 {
     c_0 = _c_0;
     Gamma_0 = _Gamma_0;
+    s_H = _s_H;
 }
 
 double HPR_Solid::getPressure( const SimpleArray< double, 14 >& Q )
 {
-    // TODO: on the paper 
+    double rho = getDensity( Q );
+    SimpleArray< double, 3 > u = getVelocity( Q );
+    Eigen::Matrix3d A = getDistortion( Q );
+    double E = getEnergy( Q );
+    
+    double E_2 = mesoEnergy( A );
+    double E_3 = macroEnergy( u );
+
+    double nu = rho / rho_0;
+    double f = ( nu - 1.0 ) * ( nu - 0.5 * Gamma_0 * ( nu - 1.0 ) ) / 
+        pow( ( nu - s_H * ( nu - 1.0 ) ), 2.0 );
+
+    return rho_0 * c_0 * c_0 * f + rho_0 * Gamma_0 * ( E  - E_2 - E_3 );
 }
 
 double HPR_Solid::microEnergy( double density, double pressure )
 {
-    // TODO: on the paper
+    double nu = density / rho_0; 
+    double f = ( nu - 1.0 ) * ( nu - 0.5 * Gamma_0 * ( nu - 1.0 ) ) / 
+        pow( ( nu - s_H * ( nu - 1.0 ) ), 2.0 );
+
+    return ( pressure - rho_0 * c_0 * c_0 * f ) / ( rho_0 * Gamma_0 );
 }
 
-double slopeLimiter(double q_min, double q_0, double q_plus)
-{ // TODO: move to different file
+double HPR_Solid::getTimeStep( const double c_CFL )
+{
+    std::vector< double > S( nCells + 2 * nGhostCells ); 
+    SimpleArray< double, 3 > u; 
+
+#pragma omp parallel for private( u )
+    // TODO: reduce for loop with max
+    for( unsigned i = 0; i < nCells + 2 * nGhostCells; i++ )
+    {
+        u = getVelocity( consVars[i] );
+        S[i] = fabs( u[0] ) + sqrt( c_0 * c_0 + 4.0 * c_s * c_s / 3.0 );
+    }
+
+    return c_CFL * dx / *std::max_element( S.begin(), S.end() );
+}
+
+/* ODE STRUCT */
+
+HPR_ODE::HPR_ODE( double _tau, double _rho_0 )
+{
+    tau = _tau; 
+    rho_0 = _rho_0;
+}
+
+void HPR_ODE::operator()( const state_type& Q, state_type& S, const double t )
+{
+    double nu = Q[0] / rho_0;
+
+    Eigen::Matrix3d A;
+    for( unsigned i = 0; i < 3; i++ )
+    {
+        for( unsigned j = 0; j < 3; j++ )
+        {
+            A(i, j) = Q[4 + 3 * i + j];
+        }
+    }
+
+    Eigen::Matrix3d G = A.transpose() * A;
+    Eigen::Matrix3d devG = G - G.trace() / 3.0 * Eigen::Matrix3d::Identity();
+    Eigen::Matrix3d Psi = - 3.0 * pow( nu, 5.0 / 3.0 ) / tau * A * devG;
+
+    for( unsigned i = 0; i < 4; i++ )
+    { // no source terms for density, velocity
+        S[i] = 0.0;
+    }
+
+    for( unsigned i = 0; i < 3; i++ )
+    {
+        for( unsigned j = 0; j < 3; j++ )
+        { // source terms for distortion tensor
+            S[4 + 3 * i + j] = Psi(i, j);
+        }
+    }
+
+    S[13] = 0.0; // no source term for energy
+}
+
+/* CLASS INDPDNT FUNCTIONS */
+
+double slopeLimiter( double q_min, double q_0, double q_plus )
+{ // TODO: move to different file Limiters.cpp, allow minbee vanleer etc
     double Delta_L, Delta_R; 
 
-    if(fabs(q_0 - q_min) < 1.0e-16) 
-    {
-        Delta_L = copysign(1.0e-16, q_0 - q_min);
-    }
+    if( fabs( q_0 - q_min ) < 1.0e-16 ) 
+        Delta_L = copysign( 1.0e-16, q_0 - q_min );
     else 
-    {
         Delta_L = q_0 - q_min;
-    }
 
-    if(fabs(q_plus -q_0) < 1.0e-16) 
-    {
-        Delta_R = copysign(1.0e-16, q_plus - q_0);
-    }
+    if( fabs( q_plus -q_0 ) < 1.0e-16 )
+        Delta_R = copysign( 1.0e-16, q_plus - q_0 );
     else 
-    {
         Delta_R = q_plus -q_0;
-    }
     
     double r = Delta_L / Delta_R;
 
     // superbee
-    if(r <= 0.0)
-    {
+    if( r <= 0.0 )
         return 0.0;
-    }
-    else if(r <= 0.5) 
-    {
+    else if( r <= 0.5 ) 
         return 2.0 * r; 
-    }
-    else if(r <= 1.0) 
-    {
+    else if( r <= 1.0 ) 
         return 1.0; 
-    }
-    else 
-    { //TODO: std::min_element()
-        return (2.0 < r) ?  (2.0 < 2.0 / (1.0 + r) ? 2.0 : 2.0 / (1.0 + r)) :
-            (r < 2.0 / (1.0 + r) ? r : 2.0 / (1.0 + r));
-    }
+    else //TODO: std::min_element()
+        return ( 2.0 < r ) ?  ( 2.0 < 2.0 / ( 1.0 + r ) ? 2.0 : 2.0 / ( 1.0 + r ) ) :
+            ( r < 2.0 / ( 1.0 + r ) ? r : 2.0 / ( 1.0 + r ) );
 }
 
 #endif
