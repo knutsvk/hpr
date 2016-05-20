@@ -14,11 +14,14 @@
 #include "SimpleArray.h"
 
 /* TODO
- * make classes which inherit Material: Fluid and Solid
- * allow for sources
- * extend to 2D
+ * omp for subcycling in IntegrateODE()
+ * change state_type in odeint
  * add non-conservative
- * try viscous
+ * extend to 2D, test with cylindrical explosion
+ * viscous test cases
+ *  - first problem of stokes
+ *  - laminar boundary layer
+ *  - lid driven cavity
  */
 
 class HyperbolicPeshkovRomenski
@@ -45,6 +48,7 @@ class HyperbolicPeshkovRomenski
         virtual ~HyperbolicPeshkovRomenski(){}
 
         double getDensity( const SimpleArray< double, 14 >& Q );
+        // TODO: use std::vector or std::array (or double[3]) instead? 
         SimpleArray< double, 3 > getVelocity( const SimpleArray< double, 14 >& Q );
         Eigen::Matrix3d getDistortion( const SimpleArray< double, 14 >& Q );
         double getEnergy( const SimpleArray< double, 14 >& Q );
@@ -113,6 +117,7 @@ class HPR_Solid: public HyperbolicPeshkovRomenski
 };
 
 // ODE struct
+// TODO: Use SimpleArray< double, 14 > as state_type
 typedef std::vector< double > state_type; 
 typedef boost::numeric::odeint::runge_kutta_dopri5< state_type > stepper_type;
 
