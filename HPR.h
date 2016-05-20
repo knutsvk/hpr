@@ -37,8 +37,6 @@ class HyperbolicPeshkovRomenski
         double dy; // cell width in y-direction
 
         std::vector< SimpleArray< double, 14 > > consVars; // conserved variables in each cell
-        std::vector< SimpleArray< double, 14 > > xDirFlux; // x-dir fluxes at each cell boundary 
-        std::vector< SimpleArray< double, 14 > > xDirFlux; // y-dir fluxes at each cell boundary 
 
         void xFlux( const SimpleArray< double, 14 >& Q, 
                 SimpleArray< double, 14 >& F );
