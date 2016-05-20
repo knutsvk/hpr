@@ -398,8 +398,8 @@ void HPR_Fluid::integrateODE( double dt )
             tmp[j] = consVars[i][j];
         }
 
-        integrate_adaptive( make_controlled( 1.0e-6, 1.0e-6, stepper_type() ), 
-                HPR_ODE(tau, rho_0), tmp, 0.0, 0.0 + dt, 1.0e-2 * dt );
+        integrate_adaptive( make_controlled( 1.0e-12, 1.0e-12, stepper_type() ), 
+                HPR_ODE(tau, rho_0), tmp, 0.0, 0.0 + dt, 1.0e-3 * dt );
 
         for( unsigned j = 0; j < 14; j++ )
         {
