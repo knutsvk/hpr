@@ -14,7 +14,8 @@
 #include "SimpleArray.h"
 
 /* TODO
- * extend to 2D, test with cylindrical explosion
+ * extend to 2D, 
+ * test with cylindrical explosion
  * add non-conservative
  * viscous test cases
  *  - first problem of stokes
@@ -28,21 +29,26 @@ class HyperbolicPeshkovRomenski
         double c_s; // shear wave speed
         double rho_0; // reference density 
 
-        unsigned nCells; // amount of cells in the computational domain
+        unsigned nCellsX; // amount of cells in the x-direction
+        unsigned nCellsY; // amount of cells in the y-direction
         const static unsigned nGhostCells = 2; // ghost cells outside computational domain
-        double domain[2]; // xmin = domain[0], xmax = domain[1]
-        double dx; // cell width
+        double domain[4]; // xmin = domain[0], xmax = domain[1], ymin = domain[2], ...
+        double dx; // cell width in x-direction
+        double dy; // cell width in y-direction
 
         std::vector< SimpleArray< double, 14 > > consVars; // conserved variables in each cell
-        std::vector< SimpleArray< double, 14 > > xDirFlux; // fluxes at each cell boundary 
+        std::vector< SimpleArray< double, 14 > > xDirFlux; // x-dir fluxes at each cell boundary 
+        std::vector< SimpleArray< double, 14 > > xDirFlux; // y-dir fluxes at each cell boundary 
 
-        void flux( const SimpleArray< double, 14 >& Q, 
+        void xFlux( const SimpleArray< double, 14 >& Q, 
                 SimpleArray< double, 14 >& F );
+        void yFlux( const SimpleArray< double, 14 >& Q, 
+                SimpleArray< double, 14 >& G );
 
     public:
         HyperbolicPeshkovRomenski( 
                 double _shearSoundSpeed, double _referenceDensity, 
-                int _nCells, double _domain[2] );
+                int _nCellsX, int _nCellsY, double _domain[4] );
         virtual ~HyperbolicPeshkovRomenski(){}
 
         double getDensity( const SimpleArray< double, 14 >& Q );
@@ -82,7 +88,7 @@ class HPR_Fluid: public HyperbolicPeshkovRomenski
         
     public:
         HPR_Fluid( double _shearSoundSpeed, double _referenceDensity, 
-                int _nCells, double _domain[2], 
+                int _nCellsX, int _nCellsY, double _domain[4], 
                 double _gamma, double _strainDissipationTime );
         virtual ~HPR_Fluid(){}
 
@@ -104,7 +110,7 @@ class HPR_Solid: public HyperbolicPeshkovRomenski
 
     public:
         HPR_Solid( double _shearSoundSpeed, double _referenceDensity, 
-                int _nCells, double _domain[2], 
+                int _nCellsX, int _nCellsY, double _domain[4], 
                 double _c_0, double _Gamma_0, double _s_H );
         virtual ~HPR_Solid(){}
 
