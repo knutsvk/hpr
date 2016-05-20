@@ -28,7 +28,7 @@ int main( int argc, char* argv[] )
     double tStop = 0.25;
 
     // Air
-    double C_s = 0.5; 
+    double C_s = 0.25; 
     double rho0 = 1.0;
     double g = 1.4;
     double t_PSL = 6.0e-4 / ( rho0 * C_s * C_s );
