@@ -118,7 +118,7 @@ void HyperbolicPeshkovRomenski::initialize( double initDiscontPos,
         double pressure_L, double pressure_R )
 {
     double x;
-#pragma omp parallel for private( x )
+//#pragma omp parallel for private( x )
     for( unsigned i = 0; i < nCells + 2 * nGhostCells; i++ )
     {
         x = domain[0] + ( i - nGhostCells + 0.5 ) * dx;
@@ -185,7 +185,7 @@ void HyperbolicPeshkovRomenski::force( double dt )
     int L, R;
     SimpleArray< double, 14 > F_L, F_R, Q_0, F_0;
 
-#pragma omp parallel for private( L, R, F_L, F_R, Q_0, F_0 )
+//#pragma omp parallel for private( L, R, F_L, F_R, Q_0, F_0 )
     for( unsigned i = 0; i < nCells + 1; i++ )
     {
         L = i + nGhostCells - 1;
@@ -212,8 +212,8 @@ void HyperbolicPeshkovRomenski::slic( double dt )
         Q_L, Q_R, Q_0, 
         F_L, F_R, F_0;
 
-#pragma omp parallel for private( L, R, xi_L, xi_R, Q_L_plus, Q_R_plus, Q_L_0,\
-        Q_R_0, F_L_plus, F_R_plus, F_L_0, F_R_0, Q_L, Q_R, Q_0, F_L, F_R, F_0 )
+/*#pragma omp parallel for private( L, R, xi_L, xi_R, Q_L_plus, Q_R_plus, Q_L_0,\
+        Q_R_0, F_L_plus, F_R_plus, F_L_0, F_R_0, Q_L, Q_R, Q_0, F_L, F_R, F_0 )*/
 
     for( unsigned i = 0; i < nCells + 1; i++ )
     {
@@ -258,7 +258,7 @@ void HyperbolicPeshkovRomenski::slic( double dt )
 void HyperbolicPeshkovRomenski::advancePDE( double dt )
 {
     std::vector< SimpleArray< double, 14 > > tempVars( nCells + 2 * nGhostCells );
-#pragma omp parallel for 
+//#pragma omp parallel for 
     for( unsigned i = 0; i < nCells + 2 * nGhostCells; i++ )
     {
         tempVars[i] = consVars[i];
@@ -279,7 +279,7 @@ void HyperbolicPeshkovRomenski::renormalizeDistortion()
     double rho;
     Eigen::Matrix3d A; 
     double scaleFactor; 
-#pragma omp parallel for private( rho, A, scaleFactor )
+//#pragma omp parallel for private( rho, A, scaleFactor )
     for( unsigned i = 0; i < nCells + 2 * nGhostCells; i++ )
     {
         rho = getDensity( consVars[i] );
@@ -371,7 +371,7 @@ double HPR_Fluid::getTimeStep( const double c_CFL )
     SimpleArray< double, 3 > u; 
     double p;
 
-#pragma omp parallel for private( rho, u, p )
+//#pragma omp parallel for private( rho, u, p )
     // TODO: reduce for loop with max
     for( unsigned i = 0; i < nCells + 2 * nGhostCells; i++ )
     {
@@ -386,11 +386,12 @@ double HPR_Fluid::getTimeStep( const double c_CFL )
 
 void HPR_Fluid::integrateODE( double dt )
 {
-    state_type tmp(14);
+    state_type tmp;
 
-// TODO: #pragma omp parallel for private( tmp )
+//#pragma omp parallel for private( tmp )
     for( unsigned i = nGhostCells; i < nCells + nGhostCells; i++ )
     {
+        tmp.resize(14);
         assert( tmp.size() == consVars[i].size() );
 
         for( unsigned j = 0; j < 14; j++ )
@@ -452,7 +453,7 @@ double HPR_Solid::getTimeStep( const double c_CFL )
     std::vector< double > S( nCells + 2 * nGhostCells ); 
     SimpleArray< double, 3 > u; 
 
-#pragma omp parallel for private( u )
+//#pragma omp parallel for private( u )
     // TODO: reduce for loop with max
     for( unsigned i = 0; i < nCells + 2 * nGhostCells; i++ )
     {
