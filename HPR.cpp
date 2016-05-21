@@ -5,7 +5,7 @@
 
 /* BASE CLASS FOR HPR MATERIALS */
 
-void HyperbolicPeshkovRomenski::flux( 
+void HyperbolicPeshkovRomenski::xFlux( 
         const SimpleArray< double, 14 >& Q, 
         SimpleArray< double, 14 >& F )
 {
@@ -34,25 +34,70 @@ void HyperbolicPeshkovRomenski::flux(
         - sigma(1, 0) * u[1] - sigma(2, 0) * u[2];
 }
 
-void HyperbolicPeshkovRomenski::forceFlux( double dt, double dx, 
+void HyperbolicPeshkovRomenski::yFlux( 
+        const SimpleArray< double, 14 >& Q, 
+        SimpleArray< double, 14 >& G )
+{
+    double rho = getDensity( Q );
+    SimpleArray< double, 3 > u = getVelocity( Q );
+    Eigen::Matrix3d A = getDistortion( Q );
+    double E = getEnergy( Q );
+
+    Eigen::Matrix3d sigma = getShearStress( Q );
+    double p = getPressure( Q );
+    
+    G[0] = rho * u[1];
+    G[1] = rho * u[1] * u[0] - sigma(0, 1);
+    G[2] = rho * u[1] * u[1] - sigma(1, 1) + p;
+    G[3] = rho * u[1] * u[2] - sigma(2, 1);
+    G[4] = 0.0;
+    G[5] = A( 0, 0 ) * u[0] + A(0, 1) * u[1] + A(0, 2) * u [2];
+    G[6] = 0.0;
+    G[7] = 0.0;
+    G[8] = A(1, 0) * u[0] + A(1, 1) * u[1] + A(1, 2) * u [2];
+    G[9] = 0.0;
+    G[10] = 0.0;
+    G[11] = A(2, 0) * u[0] + A(2, 1) * u[1] + A(2, 2) * u [2];
+    G[12] = 0.0;
+    G[13] = rho * u[1] * E + u[1] * p - sigma(0, 1) * u[0] 
+        - sigma(1, 1) * u[1] - sigma(2, 1) * u[2];
+}
+
+void HyperbolicPeshkovRomenski::forceFlux( double dt, double dx, int dir, 
         const SimpleArray< double, 14 >& Q_L, 
         const SimpleArray< double, 14 >& Q_R, 
         SimpleArray< double, 14 >& F )
 {
     SimpleArray< double, 14 > F_L, F_R, Q_0, F_0;
 
-    flux( Q_L, F_L );
-    flux( Q_R, F_R );
+    if( dir == 0 )
+    {
+        xFlux( Q_L, F_L );
+        xFlux( Q_R, F_R );
+    }
+    else 
+    {
+        yFlux( Q_L, F_L );
+        yFlux( Q_R, F_R );
+    }
 
     Q_0 = 0.5 * ( Q_L + Q_R )
         + 0.5 * dt / dx * ( F_L - F_R );
-    flux( Q_0, F_0 );
+
+    if( dir == 0 )
+    {
+        xFlux( Q_0, F_0 );
+    }
+    else 
+    {
+        yFlux( Q_0, F_0 );
+    }
 
     F = 0.5 * ( F_0 + 0.5 * ( F_L + F_R ) ) 
         + 0.25 * dx / dt * ( Q_L - Q_R ); 
 }
 
-void HyperbolicPeshkovRomenski::slicFlux( double dt, double dx, 
+void HyperbolicPeshkovRomenski::slicFlux( double dt, double dx, int dir, 
         const SimpleArray< double, 14 >& Q_2L, 
         const SimpleArray< double, 14 >& Q_L, 
         const SimpleArray< double, 14 >& Q_R, 
@@ -65,7 +110,7 @@ void HyperbolicPeshkovRomenski::slicFlux( double dt, double dx,
         Q_L_bar, Q_R_bar; 
 
     // Calculate TVD slope limiters
-    for( unsigned j = 0; j < 14; j++ )
+    for( int j = 0; j < 14; j++ )
     {
         xi_L[j] = slopeLimiter( Q_2L[j], Q_L[j], Q_R[j] );
         xi_R[j] = slopeLimiter( Q_L[j], Q_R[j], Q_2R[j] );
@@ -77,34 +122,47 @@ void HyperbolicPeshkovRomenski::slicFlux( double dt, double dx,
     Q_L_0 = Q_L - 0.25 * xi_L * ( Q_R - Q_2L );
     Q_R_0 = Q_L + 0.25 * xi_L * ( Q_R - Q_2L );
 
-    flux( Q_L_plus, F_L_plus );
-    flux( Q_R_plus, F_R_plus );
-    flux( Q_L_0, F_L_0 );
-    flux( Q_R_0, F_R_0 );
+    if( dir == 0 )
+    {
+        xFlux( Q_L_plus, F_L_plus );
+        xFlux( Q_R_plus, F_R_plus );
+        xFlux( Q_L_0, F_L_0 );
+        xFlux( Q_R_0, F_R_0 );
+    }
+    else 
+    {
+        yFlux( Q_L_plus, F_L_plus );
+        yFlux( Q_R_plus, F_R_plus );
+        yFlux( Q_L_0, F_L_0 );
+        yFlux( Q_R_0, F_R_0 );
+    }
 
     // Evolve by time 0.5 * dt
     Q_L_bar = Q_L_plus + 0.5 * dt / dx * ( F_L_plus - F_R_plus );
     Q_R_bar = Q_R_0 + 0.5 * dt / dx * ( F_L_0 - F_R_0 );
 
-    forceFlux( dt, dx, Q_R_bar, Q_L_bar, F );
+    forceFlux( dt, dx, dir, Q_R_bar, Q_L_bar, F );
 }
-
 HyperbolicPeshkovRomenski::HyperbolicPeshkovRomenski( 
         double _shearSoundSpeed, double _referenceDensity, 
-        int _nCells, double _domain[2] )
+        int _nCellsX, int _nCellsY, double _domain[4] )
 {
     c_s = _shearSoundSpeed; 
     rho_0 = _referenceDensity;
-    nCells = _nCells;
+    nCellsX = _nCellsX;
+    nCellsY = _nCellsY;
+    nGhostCells = 2;
+    nCellsTot = ( nCellsX + 2 * nGhostCells ) * ( nCellsY + 2 * nGhostCells );
 
-    for(unsigned i = 0; i < 2; i++)
+    for(int i = 0; i < 4; i++)
     {
         domain[i] = _domain[i];
     }
 
-    dx = ( domain[1] - domain[0] ) / nCells;
+    dx = ( domain[1] - domain[0] ) / nCellsX;
+    dy = ( domain[3] - domain[2] ) / nCellsY; 
 
-    consVars.resize( nCells + 2 * nGhostCells );
+    consVars.resize( nCellsTot );
 }
 
 double HyperbolicPeshkovRomenski::getDensity( 
@@ -117,7 +175,7 @@ SimpleArray< double, 3 > HyperbolicPeshkovRomenski::getVelocity(
         const SimpleArray< double, 14 >& Q )
 {
     SimpleArray< double, 3 > u; 
-    for( unsigned i = 0; i < 3; i++ ) 
+    for( int i = 0; i < 3; i++ ) 
     { 
         u[i] = Q[i + 1];
     }
@@ -128,9 +186,9 @@ Eigen::Matrix3d HyperbolicPeshkovRomenski::getDistortion(
         const SimpleArray< double, 14 >& Q )
 {
     Eigen::Matrix3d A;
-    for( unsigned i = 0; i < 3; i++ )
+    for( int i = 0; i < 3; i++ )
     {
-        for( unsigned j = 0; j < 3; j++ )
+        for( int j = 0; j < 3; j++ )
         {
             A(i, j) = Q[4 + 3 * i + j];
         }
@@ -165,97 +223,162 @@ double HyperbolicPeshkovRomenski::macroEnergy( SimpleArray< double, 3 > u )
     return 0.5 * ( u[0] * u[0] + u[1] * u[1] + u[2] * u[2] );
 }
 
-void HyperbolicPeshkovRomenski::initialize( double initDiscontPos, 
+void HyperbolicPeshkovRomenski::initialize( double initDiscontRad, 
         double density_L, double density_R, 
         SimpleArray< double, 3 > velocity_L, SimpleArray< double, 3 > velocity_R, 
         Eigen::Matrix3d distortion_L, Eigen::Matrix3d distortion_R,
         double pressure_L, double pressure_R )
 {
-    double x;
-#pragma omp parallel for private( x )
-    for( unsigned i = 0; i < nCells + 2 * nGhostCells; i++ )
-    {
-        x = domain[0] + ( i - nGhostCells + 0.5 ) * dx;
+    double x, y, r;
+    int cell;
 
-        if(x < initDiscontPos)
+#pragma omp parallel for private( x, y, r, cell )
+    for( int i = 0; i < nCellsX + 2 * nGhostCells; i++ )
+    {
+        for( int j = 0; j < nCellsY + 2 * nGhostCells; j++ )
         {
-            consVars[i][0] = density_L;
-            for( unsigned j = 0; j < 3; j++ )
+            cell = i * ( nCellsY + 2 * nGhostCells ) + j;
+            x = domain[0] + ( i - nGhostCells + 0.5 ) * dx;
+            y = domain[2] + ( j - nGhostCells + 0.5 ) * dy; 
+            r = sqrt( x * x + y * y );
+
+            if( r < initDiscontRad )
             {
-                consVars[i][j + 1] = density_L * velocity_L[j];
-                for( unsigned k = 0; k < 3; k++ )
+                consVars[cell][0] = density_L;
+                for( int k = 0; k < 3; k++ )
                 {
-                    consVars[i][4 + 3 * j + k] = distortion_L(j, k);
+                    consVars[cell][k + 1] = density_L * velocity_L[k];
+                    for( int l = 0; l < 3; l++ )
+                    {
+                        consVars[cell][4 + 3 * k + l] = distortion_L(k, l);
+                    }
                 }
+                consVars[cell][13] = density_L * 
+                    ( microEnergy( density_L, pressure_L ) +
+                      mesoEnergy( distortion_L ) + 
+                      macroEnergy( velocity_L ) );
             }
-            consVars[i][13] = density_L * 
-                ( microEnergy( density_L, pressure_L ) +
-                  mesoEnergy( distortion_L ) + 
-                  macroEnergy( velocity_L ) );
-        }
-        else
-        {
-            consVars[i][0] = density_R;
-            for( unsigned j = 0; j < 3; j++ )
+            else
             {
-                consVars[i][j + 1] = density_R * velocity_R[j];
-                for( unsigned k = 0; k < 3; k++ )
+                consVars[cell][0] = density_R;
+                for( int k = 0; k < 3; k++ )
                 {
-                    consVars[i][4 + 3 * j + k] = distortion_R(j, k);
+                    consVars[cell][k + 1] = density_R * velocity_R[k];
+                    for( int l = 0; l < 3; l++ )
+                    {
+                        consVars[cell][4 + 3 * k + l] = distortion_R(k, l);
+                    }
                 }
+                consVars[cell][13] = density_R * 
+                    ( microEnergy( density_R, pressure_R ) +
+                      mesoEnergy( distortion_R ) + 
+                      macroEnergy( velocity_R ) );
             }
-            consVars[i][13] = density_R * 
-                ( microEnergy( density_R, pressure_R ) +
-                  mesoEnergy( distortion_R ) + 
-                  macroEnergy( velocity_R ) );
         }
     }
 }
 
 void HyperbolicPeshkovRomenski::transmissiveBCs()
 {
-    for( unsigned i = 0; i < nGhostCells; i++ )
+    // TODO: ALlow different BCs at each edge
+    int cell;
+
+    for( int i = 0; i < nGhostCells; i++ )
     {
-        consVars[i] = consVars[i + 1];
-        consVars[nCells + 2 * nGhostCells - 1 - i] = 
-            consVars[nCells + 2 * nGhostCells - 1 - (i + 1)];
+        for( int j = nGhostCells; j < nGhostCells + nCellsY; j++ )
+        {
+            cell = i * ( nCellsY + 2 * nGhostCells ) + j;
+            consVars[cell] = consVars[cell + nCellsY + 2 * nGhostCells];
+            consVars[nCellsTot - 1 - cell] 
+                = consVars[nCellsTot - 1 - ( cell + nCellsY + 2 * nGhostCells )];
+        }
+    }
+
+    for( int i = nGhostCells; i < nGhostCells + nCellsX ; i++ )
+    {
+        for( int j = 0; j < nGhostCells; j++ )
+        {
+            cell = i * ( nCellsY + 2 * nGhostCells ) + j;
+            consVars[cell] = consVars[cell + 1];
+            consVars[nCellsTot - 1 - cell] = consVars[nCellsTot - 1 - ( cell + 1 )];
+        }
     }
 }
 
 void HyperbolicPeshkovRomenski::reflectiveBCs()
 {
-    for( unsigned i = 0; i < nGhostCells; i++ )
-    {
-        consVars[i] = consVars[i + 1];
-        consVars[i][1] *= - 1.0;
-        consVars[nCells + 2 * nGhostCells - i] = 
-            consVars[nCells + 2 * nGhostCells - (i + 1)];
-        consVars[nCells + 2 * nGhostCells - i][1] *= - 1.0;
-    }
+    // TODO
 }
 
-void HyperbolicPeshkovRomenski::advancePDE( double dt )
+void HyperbolicPeshkovRomenski::xSweep( double dt )
 {
-    std::vector< SimpleArray< double, 14 > > tempVars( nCells + 2 * nGhostCells );
+    std::vector< SimpleArray< double, 14 > > tempVars( nCellsTot );
 #pragma omp parallel for 
-    for( unsigned i = 0; i < nCells + 2 * nGhostCells; i++ )
+    for( int i = 0; i < nCellsTot; i++ )
     {
         tempVars[i] = consVars[i];
     } 
+    
+    int cell; 
+    SimpleArray< double, 14 > F_L, F_R;
 
-    SimpleArray< double, 14 > F_L;
-    SimpleArray< double, 14 > F_R;
-
-#pragma omp parallel for private( F_L, F_R )
-    for( unsigned i = nGhostCells; i < nCells + nGhostCells; i++ )
+#pragma omp parallel for private( cell, F_L, F_R )
+    for( int i = nGhostCells; i < nGhostCells + nCellsX; i++ )
     {
-        slicFlux( dt, dx, tempVars[i - 2], tempVars[i - 1], tempVars[i],
-                tempVars[i + 1], F_L);
-        slicFlux( dt, dx, tempVars[i - 1], tempVars[i], tempVars[i + 1],
-                tempVars[i + 2], F_R);
-        consVars[i] = tempVars[i] + dt / dx * 
-            ( F_L - F_R );
+        for( int j = nGhostCells; j < nGhostCells + nCellsY; j++ )
+        {
+            cell = i * ( nCellsY + 2 * nGhostCells ) + j; 
+            slicFlux( dt, dx, 0, 
+                    tempVars[cell - 2 * ( nCellsY + 2 * nGhostCells )],
+                    tempVars[cell - ( nCellsY + 2 * nGhostCells )],
+                    tempVars[cell], 
+                    tempVars[cell + ( nCellsY + 2 * nGhostCells )], 
+                    F_L );
+            slicFlux( dt, dx, 0,
+                    tempVars[cell - ( nCellsY + 2 * nGhostCells )],
+                    tempVars[cell], 
+                    tempVars[cell + ( nCellsY + 2 * nGhostCells )], 
+                    tempVars[cell + 2 * ( nCellsY + 2 * nGhostCells )], 
+                    F_R );
+            consVars[cell] = tempVars[cell] + dt / dx * ( F_L - F_R ); 
+        }
     } 
+    renormalizeDistortion();
+}
+
+void HyperbolicPeshkovRomenski::ySweep( double dt )
+{
+    std::vector< SimpleArray< double, 14 > > tempVars( nCellsTot );
+#pragma omp parallel for 
+    for( int i = 0; i < nCellsTot; i++ )
+    {
+        tempVars[i] = consVars[i];
+    } 
+    
+    int cell; 
+    SimpleArray< double, 14 > F_B, F_T;
+#pragma omp parallel for private( cell, F_B, F_T )
+    for( int i = nGhostCells; i < nGhostCells + nCellsX; i++ )
+    {
+        for( int j = nGhostCells; j < nGhostCells + nCellsY; j++ )
+        {
+            cell = i * ( nCellsY + 2 * nGhostCells ) + j; 
+            slicFlux( dt, dy, 1,
+                    tempVars[cell - 2],
+                    tempVars[cell - 1],
+                    tempVars[cell], 
+                    tempVars[cell + 1], 
+                    F_B );
+            slicFlux( dt, dy, 1, 
+                    tempVars[cell - 1],
+                    tempVars[cell], 
+                    tempVars[cell + 1],
+                    tempVars[cell + 2],
+                    F_T );
+            consVars[cell] = tempVars[cell] + dt / dy * ( F_B - F_T ); 
+        }
+    } 
+    renormalizeDistortion();
 }
 
 void HyperbolicPeshkovRomenski::renormalizeDistortion()
@@ -264,15 +387,15 @@ void HyperbolicPeshkovRomenski::renormalizeDistortion()
     Eigen::Matrix3d A; 
     double scaleFactor; 
 #pragma omp parallel for private( rho, A, scaleFactor )
-    for( unsigned i = 0; i < nCells + 2 * nGhostCells; i++ )
+    for( int i = 0; i < nCellsTot; i++ )
     {
         rho = getDensity( consVars[i] );
         A = getDistortion( consVars[i] );
         scaleFactor = pow( rho / ( rho_0 * A.determinant() ), 1.0 / 3.0 );
         A *= scaleFactor;
-        for( unsigned j = 0; j < 3; j++ )
+        for( int j = 0; j < 3; j++ )
         {
-            for( unsigned k = 0; k < 3; k++ )
+            for( int k = 0; k < 3; k++ )
             {
                 consVars[i][4 + 3 * j + k] = A(j, k);
             }
@@ -280,42 +403,86 @@ void HyperbolicPeshkovRomenski::renormalizeDistortion()
     }
 }
 
-void HyperbolicPeshkovRomenski::output()
+void HyperbolicPeshkovRomenski::output2D()
 {
+    int cell; 
+    double x, y;
     double rho; 
     SimpleArray< double, 3 > u;
     double p; 
     Eigen::Matrix3d sigma;
 
-    // TODO: add entropy
-    //
-    std::cout << "x" << "\t" << "rho" << "\t" << "p" << "\t" 
-        << "u" << "\t" << "v" << "\t" << "w" << "\t" 
-        << "sigma11" << "\t" << "sigma12" << "\t" << "sigma13" << "\t" 
-        << "sigma22" << "\t" << "sigma23" << "\t" << "sigma33" << std::endl; 
+    std::ofstream fs; 
+    char filename[50];
+    sprintf( filename, "Cylindrical_2D_Nx%d_Ny%d.out", nCellsX, nCellsY );
+    fs.open( filename );
+    fs << "x" << "\t" << "y" << "\t" << "rho" << "\t" << "p" << "\t" 
+        << "u" << "\t" << "v" << "\t" << "w" << "\t" << "sigma11" << "\t" 
+        << "sigma12" << "\t" << "sigma13" << "\t" << "sigma22" << "\t" 
+        << "sigma23" << "\t" << "sigma33" << std::endl; 
 
-    for( unsigned i = nGhostCells; i < nCells +  nGhostCells; i++ )
+    for( int i = nGhostCells; i < nGhostCells + nCellsX; i++ )
     {
-        rho = getDensity( consVars[i] );
-        u = getVelocity( consVars[i] );
-        p = getPressure( consVars[i] );
-        sigma = getShearStress( consVars[i] );
+        for( int j = nGhostCells; j < nGhostCells + nCellsY; j++ )
+        {
+            cell = i * ( nCellsY + 2 * nGhostCells ) + j;
+            x = domain[0] + (i - nGhostCells + 0.5 ) * dx; 
+            y = domain[2] + (j - nGhostCells + 0.5 ) * dy; 
+            rho = getDensity( consVars[cell] );
+            u = getVelocity( consVars[cell] );
+            p = getPressure( consVars[cell] );
+            sigma = getShearStress( consVars[cell] );
 
-        std::cout << domain[0] + ( i - nGhostCells + 0.5 ) * dx << " \t" 
-            << rho << " \t" << p << " \t" << u[0] << " \t" << u[1] << " \t" 
-            << u[2] << " \t" << sigma(0, 0) - p << "\t" << sigma(0, 1) << "\t"
-            << sigma(0, 2) << "\t" << sigma(1, 1) - p << "\t" 
-            << sigma(1, 2) << "\t" << sigma(2, 2) - p << "\t" << std::endl;
+            fs << x << " \t" << y << " \t" 
+                << rho << " \t" << p << " \t" << u[0] << " \t" << u[1] << " \t" 
+                << u[2] << " \t" << sigma(0, 0) - p << "\t" << sigma(0, 1) << "\t"
+                << sigma(0, 2) << "\t" << sigma(1, 1) - p << "\t" 
+                << sigma(1, 2) << "\t" << sigma(2, 2) - p << "\t" << std::endl;
+        }
+        fs << std::endl; 
     }
+    fs.close();
+}
+
+void HyperbolicPeshkovRomenski::output1DSlices()
+{
+    int cell;
+    double x;
+    double rho; 
+    SimpleArray< double, 3 > u;
+    double uAbs;
+    double p; 
+    double e; 
+
+    std::ofstream fs; 
+    char filename[50];
+    sprintf( filename, "Cylindrical_1DSlices_Nx%d_Ny%d.out", nCellsX, nCellsY );
+    fs.open( filename );
+    fs << "x" << "\t" << "rho" << "\t" << "u" << "\t" << "p" << "\t" << "e" << std::endl;
+
+    int j = nGhostCells + nCellsY / 2;
+    for( int i = nGhostCells + nCellsX / 2; i < nGhostCells + nCellsX; i++ )
+    {
+        cell = i * ( nCellsY + 2 * nGhostCells ) + j;
+        x = domain[0] + (i - nGhostCells + 0.5 ) * dx; 
+        rho = getDensity( consVars[cell] );
+        u = getVelocity( consVars[cell] );
+        uAbs = sqrt( u[0] * u[0] + u[1] * u[1] + u[2] * u[2] );
+        p = getPressure( consVars[cell] );
+        e = microEnergy( rho, p );
+
+        fs << x << "\t" << rho << "\t" << uAbs << "\t" << p << "\t" << e << std::endl;
+    }
+    fs.close();
 }
 
 /* CLASS HPR_FLUID */
 
 HPR_Fluid::HPR_Fluid( double _shearSoundSpeed, double _referenceDensity, 
-        int _nCells, double _domain[2], 
+        int _nCellsX, int _nCellsY, double _domain[4], 
         double _gamma, double _strainDissipationTime ) : 
     HyperbolicPeshkovRomenski( _shearSoundSpeed, _referenceDensity, 
-            _nCells, _domain) 
+            _nCellsX, _nCellsY, _domain) 
 {
     gamma = _gamma;
     tau = _strainDissipationTime;
@@ -334,58 +501,63 @@ double HPR_Fluid::getPressure( const SimpleArray< double, 14 >& Q )
     return ( gamma - 1.0 ) * rho * ( E - E_2 - E_3 );
 }
 
-Eigen::Matrix3d HPR_Fluid::getSource( const SimpleArray< double, 14 >& Q )
-{
-    double nu = getDensity( Q ) / rho_0;
-    Eigen::Matrix3d A = getDistortion( Q );
-    Eigen::Matrix3d G = A.transpose() * A;
-    Eigen::Matrix3d devG = G - G.trace() * Eigen::Matrix3d::Identity() / 3.0;
-    return - 3.0 * pow(nu, 5.0 / 3.0) * A * devG / tau;
-}
-
 double HPR_Fluid::microEnergy( double density, double pressure )
 {
     return pressure / ( ( gamma - 1.0 ) * density );
 }
 
 double HPR_Fluid::getTimeStep( const double c_CFL )
-{
-    std::vector< double > S( nCells + 2 * nGhostCells ); 
+{ 
+    std::vector< double > Sx( nCellsTot ); 
+    std::vector< double > Sy( nCellsTot ); 
     double rho;
     SimpleArray< double, 3 > u; 
     double p;
+    double a; 
 
 #pragma omp parallel for private( rho, u, p )
     // TODO: reduce for loop with max
-    for( unsigned i = 0; i < nCells + 2 * nGhostCells; i++ )
+    for( int i = 0; i < nCellsTot; i++ )
     {
         rho = getDensity( consVars[i] );
         u = getVelocity( consVars[i] );
         p = getPressure( consVars[i] );
-        S[i] = fabs( u[0] ) + sqrt( gamma * p / rho + 4.0 * c_s * c_s / 3.0 );
+        a = sqrt( gamma * p / rho + 4.0 * c_s * c_s / 3.0 );
+        Sx[i] = fabs( u[0] ) + a; 
+        Sy[i] = fabs( u[1] ) + a; 
     }
 
-    return c_CFL * dx / *std::max_element( S.begin(), S.end() );
+    double SxMax = *std::max_element( Sx.begin(), Sx.end() );
+    double SyMax = *std::max_element( Sy.begin(), Sy.end() );
+
+    return dx / SxMax < dy / SyMax ? c_CFL * dx / SxMax : c_CFL * dy / SyMax;
 }
 
 void HPR_Fluid::integrateODE( double dt )
 {
+    double tol = 1.0e-12;
 
 #pragma omp parallel for 
-    for( unsigned i = nGhostCells; i < nCells + nGhostCells; i++ )
+    for( int i = nGhostCells; i < nGhostCells + nCellsX; i++ )
     {
-        integrate_adaptive( make_controlled( 1.0e-12, 1.0e-12, stepper_type() ), 
-                HPR_ODE(tau, rho_0), consVars[i], 0.0, 0.0 + dt, 1.0e-3 * dt );
+        for( int j = nGhostCells; j < nGhostCells + nCellsY; j++ )
+        {
+            integrate_adaptive( make_controlled( tol, tol, stepper_type() ),
+                    HPR_ODE(tau, rho_0), 
+                    consVars[i * ( nCellsY + 2 * nGhostCells ) + j], 
+                    0.0, 0.0 + dt, 1.0e-3 * dt );
+        }
     }
+    renormalizeDistortion();
 }
 
 /* CLASS HPR_SOLID */
 
 HPR_Solid::HPR_Solid( double _shearSoundSpeed, double _referenceDensity, 
-        int _nCells, double _domain[2], 
+        int _nCellsX, int _nCellsY, double _domain[4], 
         double _c_0, double _Gamma_0, double _s_H ) : 
     HyperbolicPeshkovRomenski( _shearSoundSpeed, _referenceDensity, 
-            _nCells, _domain) 
+            _nCellsX, _nCellsY, _domain) 
 {
     c_0 = _c_0;
     Gamma_0 = _Gamma_0;
@@ -419,19 +591,8 @@ double HPR_Solid::microEnergy( double density, double pressure )
 }
 
 double HPR_Solid::getTimeStep( const double c_CFL )
-{
-    std::vector< double > S( nCells + 2 * nGhostCells ); 
-    SimpleArray< double, 3 > u; 
-
-#pragma omp parallel for private( u )
-    // TODO: reduce for loop with max
-    for( unsigned i = 0; i < nCells + 2 * nGhostCells; i++ )
-    {
-        u = getVelocity( consVars[i] );
-        S[i] = fabs( u[0] ) + sqrt( c_0 * c_0 + 4.0 * c_s * c_s / 3.0 );
-    }
-
-    return c_CFL * dx / *std::max_element( S.begin(), S.end() );
+{ // TODO: FIX FOR 2D!
+    return 0.0;
 }
 
 /* ODE STRUCT */
@@ -447,9 +608,9 @@ void HPR_ODE::operator()( const state_type& Q, state_type& S, const double t )
     double nu = Q[0] / rho_0;
 
     Eigen::Matrix3d A;
-    for( unsigned i = 0; i < 3; i++ )
+    for( int i = 0; i < 3; i++ )
     {
-        for( unsigned j = 0; j < 3; j++ )
+        for( int j = 0; j < 3; j++ )
         {
             A(i, j) = Q[4 + 3 * i + j];
         }
@@ -460,14 +621,14 @@ void HPR_ODE::operator()( const state_type& Q, state_type& S, const double t )
     Eigen::Matrix3d Psi = - 3.0 * pow( nu, 5.0 / 3.0 ) / tau * A * devG;
 
     // TODO: std::fill to set elements of S to zero by default
-    for( unsigned i = 0; i < 4; i++ )
+    for( int i = 0; i < 4; i++ )
     { // no source terms for density, velocity
         S[i] = 0.0;
     }
 
-    for( unsigned i = 0; i < 3; i++ )
+    for( int i = 0; i < 3; i++ )
     {
-        for( unsigned j = 0; j < 3; j++ )
+        for( int j = 0; j < 3; j++ )
         { // source terms for distortion tensor
             S[4 + 3 * i + j] = Psi(i, j);
         }

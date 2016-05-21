@@ -1,4 +1,4 @@
-FILE=Toro1
+FILE=CylindricalShock
 CC=g++-5
 CFLAGS=-O3 -Wall -Werror -pedantic -ansi -lm -I ~/.include/ -fopenmp
 COMPILE_COMMAND=$(CC) $(CFLAGS)

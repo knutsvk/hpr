@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <cmath>
 #include <cassert>
@@ -14,7 +15,8 @@
 #include "SimpleArray.h"
 
 /* TODO
- * extend to 2D, test with cylindrical explosion
+ * extend to 2D, 
+ * test with cylindrical explosion
  * add non-conservative
  * viscous test cases
  *  - first problem of stokes
@@ -28,14 +30,29 @@ class HyperbolicPeshkovRomenski
         double c_s; // shear wave speed
         double rho_0; // reference density 
 
-        unsigned nCells; // amount of cells in the computational domain
-        const static unsigned nGhostCells = 2; // ghost cells outside computational domain
-        double domain[2]; // xmin = domain[0], xmax = domain[1]
-        double dx; // cell width
+        int nCellsX; // amount of cells in the x-direction
+        int nCellsY; // amount of cells in the y-direction
+        int nGhostCells; // ghost cells outside computational domain
+        int nCellsTot;
+        double domain[4]; // xmin = domain[0], xmax = domain[1], ymin = domain[2], ...
+        double dx; // cell width in x-direction
+        double dy; // cell width in y-direction
 
         std::vector< SimpleArray< double, 14 > > consVars; // conserved variables in each cell
 
-        void flux( const SimpleArray< double, 14 >& Q, 
+        void xFlux( const SimpleArray< double, 14 >& Q, 
+                SimpleArray< double, 14 >& F );
+        void yFlux( const SimpleArray< double, 14 >& Q, 
+                SimpleArray< double, 14 >& G );
+        void forceFlux( double dt, double dx, int dir, 
+                const SimpleArray< double, 14 >& Q_L, 
+                const SimpleArray< double, 14 >& Q_R, 
+                SimpleArray< double, 14 >& F );
+        void slicFlux ( double dt, double dx, int dir, 
+                const SimpleArray< double, 14 >& Q_2L, 
+                const SimpleArray< double, 14 >& Q_L, 
+                const SimpleArray< double, 14 >& Q_R, 
+                const SimpleArray< double, 14 >& Q_2R, 
                 SimpleArray< double, 14 >& F );
         void forceFlux( double dt, double dx, 
                 const SimpleArray< double, 14 >& Q_L, 
@@ -51,7 +68,7 @@ class HyperbolicPeshkovRomenski
     public:
         HyperbolicPeshkovRomenski( 
                 double _shearSoundSpeed, double _referenceDensity, 
-                int _nCells, double _domain[2] );
+                int _nCellsX, int _nCellsY, double _domain[4] );
         virtual ~HyperbolicPeshkovRomenski(){}
 
         double getDensity( const SimpleArray< double, 14 >& Q );
@@ -76,9 +93,11 @@ class HyperbolicPeshkovRomenski
                 
         void transmissiveBCs();
         void reflectiveBCs();
-        void advancePDE( double dt );
+        void xSweep( double dt );
+        void ySweep( double dt );
         void renormalizeDistortion();
-        void output();
+        void output2D();
+        void output1DSlices();
 };
 
 class HPR_Fluid: public HyperbolicPeshkovRomenski
@@ -89,7 +108,7 @@ class HPR_Fluid: public HyperbolicPeshkovRomenski
         
     public:
         HPR_Fluid( double _shearSoundSpeed, double _referenceDensity, 
-                int _nCells, double _domain[2], 
+                int _nCellsX, int _nCellsY, double _domain[4], 
                 double _gamma, double _strainDissipationTime );
         virtual ~HPR_Fluid(){}
 
@@ -111,7 +130,7 @@ class HPR_Solid: public HyperbolicPeshkovRomenski
 
     public:
         HPR_Solid( double _shearSoundSpeed, double _referenceDensity, 
-                int _nCells, double _domain[2], 
+                int _nCellsX, int _nCellsY, double _domain[4], 
                 double _c_0, double _Gamma_0, double _s_H );
         virtual ~HPR_Solid(){}
 
