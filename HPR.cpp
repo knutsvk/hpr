@@ -343,6 +343,7 @@ void HyperbolicPeshkovRomenski::xSweep( double dt )
             consVars[cell] = tempVars[cell] + dt / dx * ( F_L - F_R ); 
         }
     } 
+    renormalizeDistortion();
 }
 
 void HyperbolicPeshkovRomenski::ySweep( double dt )
@@ -378,6 +379,7 @@ void HyperbolicPeshkovRomenski::ySweep( double dt )
             consVars[cell] = tempVars[cell] + dt / dy * ( F_B - F_T ); 
         }
     } 
+    renormalizeDistortion();
 }
 
 void HyperbolicPeshkovRomenski::renormalizeDistortion()
@@ -402,17 +404,20 @@ void HyperbolicPeshkovRomenski::renormalizeDistortion()
     }
 }
 
-void HyperbolicPeshkovRomenski::output()
+void HyperbolicPeshkovRomenski::output2D()
 {
     int cell; 
-    double x, y, r; 
+    double x, y;
     double rho; 
     SimpleArray< double, 3 > u;
     double p; 
     Eigen::Matrix3d sigma;
 
-    // TODO: add entropy
-    std::cout << "x" << "\t" << "y" << "\t" << "r" << "\t" << "rho" << "\t" << "p" << "\t" 
+    std::ofstream fs; 
+    char filename[50];
+    sprintf( filename, "Cylindrical_2D_Nx%d_Ny%d.out", nCellsX, nCellsY );
+    fs.open( filename );
+    fs << "x" << "\t" << "y" << "\t" << "rho" << "\t" << "p" << "\t" 
         << "u" << "\t" << "v" << "\t" << "w" << "\t" << "sigma11" << "\t" 
         << "sigma12" << "\t" << "sigma13" << "\t" << "sigma22" << "\t" 
         << "sigma23" << "\t" << "sigma33" << std::endl; 
@@ -424,20 +429,52 @@ void HyperbolicPeshkovRomenski::output()
             cell = i * ( nCellsY + 2 * nGhostCells ) + j;
             x = domain[0] + (i - nGhostCells + 0.5 ) * dx; 
             y = domain[2] + (j - nGhostCells + 0.5 ) * dy; 
-            r = sqrt( x * x + y * y );
             rho = getDensity( consVars[cell] );
             u = getVelocity( consVars[cell] );
             p = getPressure( consVars[cell] );
             sigma = getShearStress( consVars[cell] );
 
-            std::cout << x << " \t" << y << " \t" << r << " \t" 
+            fs << x << " \t" << y << " \t" 
                 << rho << " \t" << p << " \t" << u[0] << " \t" << u[1] << " \t" 
                 << u[2] << " \t" << sigma(0, 0) - p << "\t" << sigma(0, 1) << "\t"
                 << sigma(0, 2) << "\t" << sigma(1, 1) - p << "\t" 
                 << sigma(1, 2) << "\t" << sigma(2, 2) - p << "\t" << std::endl;
         }
-        std::cout << std::endl; 
+        fs << std::endl; 
     }
+    fs.close();
+}
+
+void HyperbolicPeshkovRomenski::output1DSlices()
+{
+    int cell;
+    double x;
+    double rho; 
+    SimpleArray< double, 3 > u;
+    double uAbs;
+    double p; 
+    double e; 
+
+    std::ofstream fs; 
+    char filename[50];
+    sprintf( filename, "Cylindrical_1DSlices_Nx%d_Ny%d.out", nCellsX, nCellsY );
+    fs.open( filename );
+    fs << "x" << "\t" << "rho" << "\t" << "u" << "\t" << "p" << "\t" << "e" << std::endl;
+
+    int j = nGhostCells + nCellsY / 2;
+    for( int i = nGhostCells + nCellsX / 2; i < nGhostCells + nCellsX; i++ )
+    {
+        cell = i * ( nCellsY + 2 * nGhostCells ) + j;
+        x = domain[0] + (i - nGhostCells + 0.5 ) * dx; 
+        rho = getDensity( consVars[cell] );
+        u = getVelocity( consVars[cell] );
+        uAbs = sqrt( u[0] * u[0] + u[1] * u[1] + u[2] * u[2] );
+        p = getPressure( consVars[cell] );
+        e = microEnergy( rho, p );
+
+        fs << x << "\t" << rho << "\t" << uAbs << "\t" << p << "\t" << e << std::endl;
+    }
+    fs.close();
 }
 
 /* CLASS HPR_FLUID */
@@ -512,6 +549,7 @@ void HPR_Fluid::integrateODE( double dt )
                     0.0, 0.0 + dt, 1.0e-3 * dt );
         }
     }
+    renormalizeDistortion();
 }
 
 /* CLASS HPR_SOLID */

@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <cmath>
 #include <cassert>
@@ -85,7 +86,8 @@ class HyperbolicPeshkovRomenski
         void xSweep( double dt );
         void ySweep( double dt );
         void renormalizeDistortion();
-        void output();
+        void output2D();
+        void output1DSlices();
 };
 
 class HPR_Fluid: public HyperbolicPeshkovRomenski
