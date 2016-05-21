@@ -1,4 +1,4 @@
-FILE=CylindricalShock
+FILE=Boundaries
 CC=g++-5
 CFLAGS=-O3 -Wall -Werror -pedantic -ansi -lm -I ~/.include/ -fopenmp
 COMPILE_COMMAND=$(CC) $(CFLAGS)

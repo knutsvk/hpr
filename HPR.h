@@ -15,11 +15,11 @@
 #include "SimpleArray.h"
 
 /* TODO
+ * use enum for initDiscontDir and BCtype
  * boundary conditions
- * - reflective 
  * - no-slip (reflective with const velocity)
- * - periodic 
  * initial conditions
+ * - from input file
  * - same everywhere
  * viscous test cases
  *  - first problem of stokes
@@ -60,16 +60,6 @@ class HyperbolicPeshkovRomenski
                 const SimpleArray< double, 14 >& Q_R, 
                 const SimpleArray< double, 14 >& Q_2R, 
                 SimpleArray< double, 14 >& F );
-        void forceFlux( double dt, double dx, 
-                const SimpleArray< double, 14 >& Q_L, 
-                const SimpleArray< double, 14 >& Q_R, 
-                SimpleArray< double, 14 >& F );
-        void slicFlux ( double dt, double dx, 
-                const SimpleArray< double, 14 >& Q_2L, 
-                const SimpleArray< double, 14 >& Q_L, 
-                const SimpleArray< double, 14 >& Q_R, 
-                const SimpleArray< double, 14 >& Q_2R, 
-                SimpleArray< double, 14 >& F );
 
     public:
         HyperbolicPeshkovRomenski( 
@@ -78,7 +68,6 @@ class HyperbolicPeshkovRomenski
         virtual ~HyperbolicPeshkovRomenski(){}
 
         double getDensity( const SimpleArray< double, 14 >& Q );
-        // TODO: use std::vector or std::array (or double[3]) instead? 
         SimpleArray< double, 3 > getVelocity( const SimpleArray< double, 14 >& Q );
         Eigen::Matrix3d getDistortion( const SimpleArray< double, 14 >& Q );
         double getEnergy( const SimpleArray< double, 14 >& Q );
@@ -92,18 +81,18 @@ class HyperbolicPeshkovRomenski
 
         virtual double getTimeStep( double c_CFL ) = 0;
 
-        void initialize( double initDiscontPos, double density_L, double density_R, 
+        void initialize( double initDiscontPos, int initDiscontDir, 
+                double density_L, double density_R, 
                 SimpleArray< double, 3 > velocity_L, SimpleArray< double, 3 > velocity_R, 
                 Eigen::Matrix3d distortion_L, Eigen::Matrix3d distortion_R, 
                 double pressure_L, double pressure_R ); 
                 
-        void transmissiveBCs();
-        void reflectiveBCs();
+        void boundaryConditions( int BCtype[4] );
         void xSweep( double dt );
         void ySweep( double dt );
         void renormalizeDistortion();
-        void output2D();
-        void output1DSlices();
+        void output2D( char* filename );
+        void output1DSlices( char* filename );
 };
 
 class HPR_Fluid: public HyperbolicPeshkovRomenski
