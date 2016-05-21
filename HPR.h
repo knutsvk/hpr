@@ -16,14 +16,14 @@
 
 /* TODO
  * use enum for initDiscontDir and BCtype
- * boundary conditions
- * - no-slip (reflective with const velocity)
  * initial conditions
  * - from input file
- * - same everywhere
+ * - constant in domain
+ * - varying as f(x,y)
  * viscous test cases
  *  - first problem of stokes
  *  - laminar boundary layer
+ * no-slip BC (reflective with const velocity)
  *  - lid driven cavity
  * rethink naming of classes 
  * comment code
