@@ -15,13 +15,19 @@
 #include "SimpleArray.h"
 
 /* TODO
- * extend to 2D, 
- * test with cylindrical explosion
- * add non-conservative
+ * boundary conditions
+ * - reflective 
+ * - no-slip (reflective with const velocity)
+ * - periodic 
+ * initial conditions
+ * - same everywhere
  * viscous test cases
  *  - first problem of stokes
  *  - laminar boundary layer
  *  - lid driven cavity
+ * rethink naming of classes 
+ * comment code
+ * add non-conservative ?
  */
 
 class HyperbolicPeshkovRomenski
@@ -32,13 +38,13 @@ class HyperbolicPeshkovRomenski
 
         int nCellsX; // amount of cells in the x-direction
         int nCellsY; // amount of cells in the y-direction
-        int nGhostCells; // ghost cells outside computational domain
-        int nCellsTot;
+        int nGhostCells; // ghost cells outside domain
+        int nCellsTot; // total amount of cells
         double domain[4]; // xmin = domain[0], xmax = domain[1], ymin = domain[2], ...
         double dx; // cell width in x-direction
         double dy; // cell width in y-direction
 
-        std::vector< SimpleArray< double, 14 > > consVars; // conserved variables in each cell
+        std::vector< SimpleArray< double, 14 > > consVars; // conserved variables 
 
         void xFlux( const SimpleArray< double, 14 >& Q, 
                 SimpleArray< double, 14 >& F );
