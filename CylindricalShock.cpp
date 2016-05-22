@@ -1,14 +1,16 @@
 #include "HPR.h"
+#include <libconfig.h++>
 
 using namespace Eigen; 
 using namespace std;
 
 int main( int argc, char* argv[] )
 {
+    libconfig::Config cfg; 
+    cfg.readFile("CylindricalShock.cfg");
     // Computational parameters
-    int N = 100;
-    if( argc > 1 ) 
-        N = atoi( argv[1] );
+    int N;
+    cfg.lookupValue( "nCellsPerDirection", N );
     double c = 0.9;
 
     // Cylindrical shock tube 
@@ -17,8 +19,6 @@ int main( int argc, char* argv[] )
         transmissive };
     Direction dir = radial; 
     double tStop = 0.25;
-    if( argc > 2 ) 
-        tStop = atof( argv[2] );
     double R = 0.4;
     double rho_L = 1.000;
     double rho_R = 0.125;
