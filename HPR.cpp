@@ -223,14 +223,15 @@ double HyperbolicPeshkovRomenski::macroEnergy( SimpleArray< double, 3 > u )
     return 0.5 * ( u[0] * u[0] + u[1] * u[1] + u[2] * u[2] );
 }
 
-void HyperbolicPeshkovRomenski::initialize( double initDiscontPos, int initDiscontDir,
+void HyperbolicPeshkovRomenski::initialize( double initDiscontPos, 
+        Direction initDiscontDir,
         double density_L, double density_R, 
         SimpleArray< double, 3 > velocity_L, SimpleArray< double, 3 > velocity_R, 
         Eigen::Matrix3d distortion_L, Eigen::Matrix3d distortion_R,
         double pressure_L, double pressure_R )
 {
-    double x, y, r;
     int cell;
+    double x, y, r;
     bool isLeft;
 
 #pragma omp parallel for private( x, y, r, cell )
@@ -242,12 +243,19 @@ void HyperbolicPeshkovRomenski::initialize( double initDiscontPos, int initDisco
             x = domain[0] + ( i - nGhostCells + 0.5 ) * dx;
             y = domain[2] + ( j - nGhostCells + 0.5 ) * dy; 
             r = sqrt( x * x + y * y );
-            if( initDiscontDir == 0 )
-                isLeft = x < initDiscontPos;
-            else if( initDiscontDir == 1 )
-                isLeft = y < initDiscontPos; 
-            else
-                isLeft = r < initDiscontPos;
+
+            switch( initDiscontDir )
+            {
+                case horizontal: 
+                    isLeft = x <= initDiscontPos; 
+                    break;
+                case vertical: 
+                    isLeft = y <= initDiscontPos; 
+                    break;
+                case radial: 
+                    isLeft = r <= initDiscontPos; 
+                    break;
+            }
 
             if( isLeft )
             {
@@ -285,16 +293,12 @@ void HyperbolicPeshkovRomenski::initialize( double initDiscontPos, int initDisco
     }
 }
 
-void HyperbolicPeshkovRomenski::boundaryConditions( int BCtype[4] )
+void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
 {
-    /* BCtype[0]: left BC type
-     * BCtype[1]: right BC type
-     * BCtype[2]: bottom BC type
-     * BCtype[3]: top BC type
-     *
-     * BCtype[i] = 0: transmissive 
-     * BCtype[i] = 1: reflective
-     * BCtype[i] = 2: periodic
+    /* type[0]: left BC type
+     * type[1]: right BC type
+     * type[2]: bottom BC type
+     * type[3]: top BC type
      */
 
     int cell, copyTo, copyFrom;
@@ -306,53 +310,50 @@ void HyperbolicPeshkovRomenski::boundaryConditions( int BCtype[4] )
         {
             cell = i * M + j;
             
-            // Left boundary (x = xMin), BCtype[0]
+            // Left boundary (x = xMin)
             copyTo = cell; 
 
-            if( BCtype[0] == 0 ) // Transmissive
+            switch (type[0] )
             {
-                copyFrom = copyTo + M;
-                consVars[copyTo] = consVars[copyFrom];
+                case transmissive: 
+                    copyFrom = copyTo + M; 
+                    consVars[copyTo] = consVars[copyFrom];
+                    break;
+                case reflective:
+                    copyFrom = copyTo + ( 2 * ( nGhostCells - i ) - 1 ) * M;
+                    consVars[copyTo] = consVars[copyFrom];
+                    consVars[copyTo][1] *= - 1.0;
+                    break;
+                case periodic: 
+                    if( i == 0 )
+                        copyFrom = nCellsTot - M + cell;
+                    else
+                        copyFrom = copyTo - M; 
+                    consVars[copyTo] = consVars[copyFrom];
+                    break;
             }
-            else if( BCtype[0] == 1 ) // Reflective
-            {
-                copyFrom = copyTo + ( 2 * ( nGhostCells - i ) - 1 ) * M;
-                consVars[copyTo] = consVars[copyFrom];
-                consVars[copyTo][1] *= - 1.0;
-            }
-            else if( BCtype[0] == 2 ) // Periodic
-            {
-                if( i == 0 )
-                    copyFrom = nCellsTot - M + cell;
-                else
-                    copyFrom = copyTo - M; 
 
-                consVars[copyTo] = consVars[copyFrom];
-            }
-
-            // Right boundary (x = xMax), BCtype[1]
+            // Right boundary (x = xMax)
             copyTo = nCellsTot - 1 - cell; 
 
-            if( BCtype[1] == 0 ) // Transmissive
+            switch (type[1] )
             {
-                copyFrom = copyTo - M; 
-                consVars[copyTo] = consVars[copyFrom];
-            }
-            else if( BCtype[1] == 1 ) // Reflective
-            {
-
-                copyFrom = copyTo - ( 2 * ( nGhostCells - i ) - 1 ) * M;
-                consVars[copyTo] = consVars[copyFrom];
-                consVars[copyTo][1] *= - 1.0;
-            }
-            else if( BCtype[1] == 2 ) // Periodic
-            {
-                if( i == 0 )
-                    copyFrom = M - 1 - cell; 
-                else
-                    copyFrom = copyTo + M;
-
-                consVars[copyTo] = consVars[copyFrom];
+                case transmissive: 
+                    copyFrom = copyTo - M; 
+                    consVars[copyTo] = consVars[copyFrom];
+                    break;
+                case reflective:
+                    copyFrom = copyTo - ( 2 * ( nGhostCells - i ) - 1 ) * M;
+                    consVars[copyTo] = consVars[copyFrom];
+                    consVars[copyTo][1] *= - 1.0;
+                    break;
+                case periodic: 
+                    if( i == 0 )
+                        copyFrom = M -1 - cell;
+                    else
+                        copyFrom = copyTo + M; 
+                    consVars[copyTo] = consVars[copyFrom];
+                    break;
             }
         }
     }
@@ -363,52 +364,50 @@ void HyperbolicPeshkovRomenski::boundaryConditions( int BCtype[4] )
         {
             cell = i * M + j;
 
-            // Bottom boundary (y = yMin), BCtype[2]
+            // Bottom boundary (y = yMin)
             copyTo = cell; 
 
-            if( BCtype[2] == 0 ) // Transmissive
+            switch( type[2] )
             {
-                copyFrom = copyTo + 1;
-                consVars[copyTo] = consVars[copyFrom];
+                case transmissive: 
+                    copyFrom = copyTo + 1; 
+                    consVars[copyTo] = consVars[copyFrom];
+                    break;
+                case reflective:
+                    copyFrom = copyTo + ( 2 * ( nGhostCells - j ) - 1 );
+                    consVars[copyTo] = consVars[copyFrom];
+                    consVars[copyTo][2] *= - 1.0;
+                    break;
+                case periodic: 
+                    if( i == 0 )
+                        copyFrom = cell + M - 1;
+                    else
+                        copyFrom = cell - 1; 
+                    consVars[copyTo] = consVars[copyFrom];
+                    break;
             }
-            else if( BCtype[2] == 1 ) // Reflective
-            {
-                copyFrom = copyTo + ( 2 * ( nGhostCells - j ) - 1 );
-                consVars[copyTo] = consVars[copyFrom];
-                consVars[copyTo][2] *= - 1.0;
-            }
-            else if( BCtype[2] == 2 ) // Periodic
-            {
-                if( i == 0 )
-                    copyFrom = cell + M - 1;
-                else
-                    copyFrom = cell - 1;
 
-                consVars[copyTo] = consVars[copyFrom];
-            }
-
-            // Top boundary (y = yMax), BCtype[3]
+            // Top boundary (y = yMax)
             copyTo = cell + M - 1 - 2 * j;
 
-            if( BCtype[3] == 0 ) // Transmissive
+            switch( type[3] )
             {
-                copyFrom = copyTo - 1; 
-                consVars[copyTo] = consVars[copyFrom];
-            }
-            else if( BCtype[3] == 1 ) // Reflective
-            {
-                copyFrom = copyTo - ( 2 * ( nGhostCells - j ) - 1 );
-                consVars[copyTo] = consVars[copyFrom];
-                consVars[copyTo][2] *= - 1.0;
-            }
-            else if( BCtype[3] == 2 ) // Reflective
-            {
-                if( i == 0 )
-                    copyFrom = copyTo + 1 - M;
-                else
-                    copyFrom = copyTo + 1;
-
-                consVars[copyTo] = consVars[copyFrom];
+                case transmissive: 
+                    copyFrom = copyTo - 1; 
+                    consVars[copyTo] = consVars[copyFrom];
+                    break;
+                case reflective:
+                    copyFrom = copyTo - ( 2 * ( nGhostCells - j ) - 1 );
+                    consVars[copyTo] = consVars[copyFrom];
+                    consVars[copyTo][2] *= - 1.0;
+                    break;
+                case periodic: 
+                    if( i == 0 )
+                        copyFrom = copyTo + 1 - M; 
+                    else
+                        copyFrom = copyTo + 1;
+                    consVars[copyTo] = consVars[copyFrom];
+                    break;
             }
         }
     }

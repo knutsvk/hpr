@@ -15,7 +15,6 @@
 #include "SimpleArray.h"
 
 /* TODO
- * use enum for initDiscontDir and BCtype
  * initial conditions
  * - from input file
  * - constant in domain
@@ -29,6 +28,11 @@
  * comment code
  * add non-conservative ?
  */
+
+// Enumerators
+
+enum Direction{ horizontal, vertical, radial };
+enum BoundaryCondition{ transmissive, reflective, periodic };
 
 class HyperbolicPeshkovRomenski
 {
@@ -81,13 +85,14 @@ class HyperbolicPeshkovRomenski
 
         virtual double getTimeStep( double c_CFL ) = 0;
 
-        void initialize( double initDiscontPos, int initDiscontDir, 
+        void initialize( double initDiscontPos, Direction initDiscontDir, 
                 double density_L, double density_R, 
-                SimpleArray< double, 3 > velocity_L, SimpleArray< double, 3 > velocity_R, 
+                SimpleArray< double, 3 > velocity_L, 
+                SimpleArray< double, 3 > velocity_R, 
                 Eigen::Matrix3d distortion_L, Eigen::Matrix3d distortion_R, 
                 double pressure_L, double pressure_R ); 
                 
-        void boundaryConditions( int BCtype[4] );
+        void boundaryConditions( BoundaryCondition type[4] );
         void xSweep( double dt );
         void ySweep( double dt );
         void renormalizeDistortion();
@@ -146,6 +151,8 @@ struct HPR_ODE
     HPR_ODE(double _tau, double rho_0);
     void operator()( const state_type& Q, state_type& S, const double t );
 };
+
+// Superbee slope limiter function
 
 double slopeLimiter( double q_minus, double q_0, double q_plus );
 

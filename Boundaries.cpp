@@ -13,7 +13,9 @@ int main( int argc, char* argv[] )
 
     // Cylindrical shock tube 
     double dom[4] = { -1.0, 1.0, -1.0, 1.0 };
-    int BCs[4] = { 0, 0, 0, 2 };
+    BoundaryCondition BCs[4] = { transmissive, transmissive, transmissive,
+        periodic };
+    Direction dir = vertical; 
     double tStop = 1.00;
     if( argc > 2 )
         tStop = atof( argv[2] );
@@ -34,7 +36,7 @@ int main( int argc, char* argv[] )
     double t_PSL = 6.0e-4 / ( rho0 * C_s * C_s );
 
     HPR_Fluid state( C_s, rho0, N, N, dom, g, t_PSL );
-    state.initialize( R, 1, rho_L, rho_R, u_L, u_R, A_L, A_R, p_L, p_R );
+    state.initialize( R, dir, rho_L, rho_R, u_L, u_R, A_L, A_R, p_L, p_R );
 
     double t = 0.0;
     double dt;
