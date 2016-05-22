@@ -22,7 +22,8 @@ int main( int argc, char* argv[] )
     // Cylindrical shock tube 
     BoundaryCondition BCs[4] = { transmissive, transmissive, transmissive,
         transmissive };
-    Direction dir = radial; 
+    Direction dir;
+    cfg.lookupValue( "initialDiscontinuityDirection", dir );
     double tStop = 0.25;
     double R = 0.4;
     double rho_L = 1.000;
