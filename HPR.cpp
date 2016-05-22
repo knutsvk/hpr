@@ -296,6 +296,7 @@ void HyperbolicPeshkovRomenski::boundaryConditions( int BCtype[4] )
      * BCtype[i] = 1: reflective
      * BCtype[i] = 2: periodic
      */
+
     int cell, copyTo, copyFrom;
     int M = nCellsY + 2 * nGhostCells; 
 
@@ -306,19 +307,16 @@ void HyperbolicPeshkovRomenski::boundaryConditions( int BCtype[4] )
             cell = i * M + j;
             
             // Left boundary (x = xMin), BCtype[0]
-            
             copyTo = cell; 
 
             if( BCtype[0] == 0 ) // Transmissive
             {
                 copyFrom = copyTo + M;
-
                 consVars[copyTo] = consVars[copyFrom];
             }
             else if( BCtype[0] == 1 ) // Reflective
             {
                 copyFrom = copyTo + ( 2 * ( nGhostCells - i ) - 1 ) * M;
-
                 consVars[copyTo] = consVars[copyFrom];
                 consVars[copyTo][1] *= - 1.0;
             }
@@ -333,20 +331,17 @@ void HyperbolicPeshkovRomenski::boundaryConditions( int BCtype[4] )
             }
 
             // Right boundary (x = xMax), BCtype[1]
-
             copyTo = nCellsTot - 1 - cell; 
 
             if( BCtype[1] == 0 ) // Transmissive
             {
                 copyFrom = copyTo - M; 
-
                 consVars[copyTo] = consVars[copyFrom];
             }
             else if( BCtype[1] == 1 ) // Reflective
             {
 
                 copyFrom = copyTo - ( 2 * ( nGhostCells - i ) - 1 ) * M;
-
                 consVars[copyTo] = consVars[copyFrom];
                 consVars[copyTo][1] *= - 1.0;
             }
@@ -369,19 +364,16 @@ void HyperbolicPeshkovRomenski::boundaryConditions( int BCtype[4] )
             cell = i * M + j;
 
             // Bottom boundary (y = yMin), BCtype[2]
-            
             copyTo = cell; 
 
             if( BCtype[2] == 0 ) // Transmissive
             {
                 copyFrom = copyTo + 1;
-
                 consVars[copyTo] = consVars[copyFrom];
             }
             else if( BCtype[2] == 1 ) // Reflective
             {
                 copyFrom = copyTo + ( 2 * ( nGhostCells - j ) - 1 );
-
                 consVars[copyTo] = consVars[copyFrom];
                 consVars[copyTo][2] *= - 1.0;
             }
@@ -396,19 +388,16 @@ void HyperbolicPeshkovRomenski::boundaryConditions( int BCtype[4] )
             }
 
             // Top boundary (y = yMax), BCtype[3]
-
             copyTo = cell + M - 1 - 2 * j;
 
             if( BCtype[3] == 0 ) // Transmissive
             {
                 copyFrom = copyTo - 1; 
-
                 consVars[copyTo] = consVars[copyFrom];
             }
             else if( BCtype[3] == 1 ) // Reflective
             {
                 copyFrom = copyTo - ( 2 * ( nGhostCells - j ) - 1 );
-
                 consVars[copyTo] = consVars[copyFrom];
                 consVars[copyTo][2] *= - 1.0;
             }
@@ -569,7 +558,8 @@ void HyperbolicPeshkovRomenski::output1DSlices( char* filename )
 
     std::ofstream fs; 
     fs.open( filename );
-    fs << "x" << "\t" << "rho" << "\t" << "u" << "\t" << "p" << "\t" << "e" << std::endl;
+    fs << "x" << "\t" << "rho" << "\t" << "u" << "\t" << "p" << "\t" << "e" <<
+        std::endl;
 
     int j = nGhostCells + nCellsY / 2;
     for( int i = nGhostCells + nCellsX / 2; i < nGhostCells + nCellsX; i++ )
@@ -582,7 +572,8 @@ void HyperbolicPeshkovRomenski::output1DSlices( char* filename )
         p = getPressure( consVars[cell] );
         e = microEnergy( rho, p );
 
-        fs << x << "\t" << rho << "\t" << uAbs << "\t" << p << "\t" << e << std::endl;
+        fs << x << "\t" << rho << "\t" << uAbs << "\t" << p << "\t" << e <<
+            std::endl;
     }
     fs.close();
 }
