@@ -10,11 +10,16 @@ int main( int argc, char* argv[] )
     cfg.readFile("CylindricalShock.cfg");
     // Computational parameters
     int N;
+    double c;
+    double dom[4];
     cfg.lookupValue( "nCellsPerDirection", N );
-    double c = 0.9;
+    cfg.lookupValue( "CFL", c );
+    cfg.lookupValue( "xMin", dom[0] );
+    cfg.lookupValue( "xMax", dom[1] );
+    cfg.lookupValue( "yMin", dom[2] );
+    cfg.lookupValue( "yMax", dom[3] );
 
     // Cylindrical shock tube 
-    double dom[4] = { -1.0, 1.0, -1.0, 1.0 };
     BoundaryCondition BCs[4] = { transmissive, transmissive, transmissive,
         transmissive };
     Direction dir = radial; 
