@@ -224,11 +224,9 @@ double HyperbolicPeshkovRomenski::macroEnergy( SimpleArray< double, 3 > u )
 }
 
 void HyperbolicPeshkovRomenski::initialize( double initDiscontPos, 
-        Direction initDiscontDir,
-        double density_L, double density_R, 
-        SimpleArray< double, 3 > velocity_L, SimpleArray< double, 3 > velocity_R, 
-        Eigen::Matrix3d distortion_L, Eigen::Matrix3d distortion_R,
-        double pressure_L, double pressure_R )
+        Direction initDiscontDir, double density[2], 
+        SimpleArray< double, 3 > velocity[2], Eigen::Matrix3d distortion[2],
+        double pressure[2] )
 {
     int cell;
     double x, y, r;
@@ -259,35 +257,35 @@ void HyperbolicPeshkovRomenski::initialize( double initDiscontPos,
 
             if( isLeft )
             {
-                consVars[cell][0] = density_L;
+                consVars[cell][0] = density[0];
                 for( int k = 0; k < 3; k++ )
                 {
-                    consVars[cell][k + 1] = density_L * velocity_L[k];
+                    consVars[cell][k + 1] = density[0] * velocity[0][k];
                     for( int l = 0; l < 3; l++ )
                     {
-                        consVars[cell][4 + 3 * k + l] = distortion_L(k, l);
+                        consVars[cell][4 + 3 * k + l] = distortion[0](k, l);
                     }
                 }
-                consVars[cell][13] = density_L * 
-                    ( microEnergy( density_L, pressure_L ) +
-                      mesoEnergy( distortion_L ) + 
-                      macroEnergy( velocity_L ) );
+                consVars[cell][13] = density[0] * 
+                    ( microEnergy( density[0], pressure[0] ) +
+                      mesoEnergy( distortion[0] ) + 
+                      macroEnergy( velocity[0] ) );
             }
             else
             {
-                consVars[cell][0] = density_R;
+                consVars[cell][0] = density[1];
                 for( int k = 0; k < 3; k++ )
                 {
-                    consVars[cell][k + 1] = density_R * velocity_R[k];
+                    consVars[cell][k + 1] = density[1] * velocity[1][k];
                     for( int l = 0; l < 3; l++ )
                     {
-                        consVars[cell][4 + 3 * k + l] = distortion_R(k, l);
+                        consVars[cell][4 + 3 * k + l] = distortion[1](k, l);
                     }
                 }
-                consVars[cell][13] = density_R * 
-                    ( microEnergy( density_R, pressure_R ) +
-                      mesoEnergy( distortion_R ) + 
-                      macroEnergy( velocity_R ) );
+                consVars[cell][13] = density[1] * 
+                    ( microEnergy( density[1], pressure[1] ) +
+                      mesoEnergy( distortion[1] ) + 
+                      macroEnergy( velocity[1] ) );
             }
         }
     }
@@ -766,6 +764,65 @@ double slopeLimiter( double q_min, double q_0, double q_plus )
     else //TODO: std::min_element()
         return ( 2.0 < r ) ?  ( 2.0 < 2.0 / ( 1.0 + r ) ? 2.0 : 2.0 / ( 1.0 + r ) ) :
             ( r < 2.0 / ( 1.0 + r ) ? r : 2.0 / ( 1.0 + r ) );
+}
+
+void configurate( const char* inputFile, int& nCellsX, int& nCellsY,
+        double& CFL, double& tStop, double& c_s, double& rho_0, double& gamma,
+        double& tau, double domain[4], double& initDiscontPos, 
+        Direction& initDiscontDir, BoundaryCondition BCs[4], 
+        double initDensity[2], SimpleArray< double, 3 > initVelocity[2],
+        Eigen::Matrix3d initDistortion[2], double initPressure[2] )
+{
+    // Read input file
+    libconfig::Config cfg; 
+    cfg.readFile( inputFile );
+
+    double mu;
+    int BCs_int[4], dir_int; 
+
+    cfg.lookupValue( "nCellsX", nCellsX );
+    cfg.lookupValue( "nCellsY", nCellsY );
+    cfg.lookupValue( "CFL", CFL );
+    cfg.lookupValue( "tStop", tStop );
+    cfg.lookupValue( "shearWaveSpeed", c_s );
+    cfg.lookupValue( "referenceDensity", rho_0 );
+    cfg.lookupValue( "heatCapacityRatio", gamma );
+    cfg.lookupValue( "viscosity", mu );
+    cfg.lookupValue( "xMin", domain[0] );
+    cfg.lookupValue( "xMax", domain[1] );
+    cfg.lookupValue( "yMin", domain[2] );
+    cfg.lookupValue( "yMax", domain[3] );
+    cfg.lookupValue( "initDiscontDir", dir_int );
+    cfg.lookupValue( "initDiscontPos", initDiscontPos );
+    cfg.lookupValue( "leftBC", BCs_int[0] );
+    cfg.lookupValue( "rightBC", BCs_int[1] );
+    cfg.lookupValue( "bottomBC", BCs_int[2] );
+    cfg.lookupValue( "topBC", BCs_int[3] );
+    cfg.lookupValue( "rho_1", initDensity[0] );
+    cfg.lookupValue( "u_1", initVelocity[0][0] );
+    cfg.lookupValue( "v_1", initVelocity[0][1] );
+    cfg.lookupValue( "w_1", initVelocity[0][2] );
+    cfg.lookupValue( "p_1", initPressure[0] );
+    cfg.lookupValue( "rho_2", initDensity[1] );
+    cfg.lookupValue( "u_2", initVelocity[1][0] );
+    cfg.lookupValue( "v_2", initVelocity[1][1] );
+    cfg.lookupValue( "w_2", initVelocity[1][2] );
+    cfg.lookupValue( "p_2", initPressure[1] );
+
+    for( int i = 0; i < 4; i++ )
+    {
+        BCs[i] = (BoundaryCondition) BCs_int[i];
+    }
+
+    initDiscontDir = (Direction) dir_int;
+
+    tau = 6 * mu / (rho_0 * c_s * c_s );
+
+    for( int i = 0; i < 2; i++ )
+    {
+        initDistortion[i] = pow( initDensity[i] / rho_0, 1.0 / 3.0 ) *
+            Eigen::Matrix3d::Identity();
+    }
 }
 
 #endif

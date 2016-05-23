@@ -1,10 +1,11 @@
-FILE=CylindricalShock
+INFILE=main
+OUTFILE=Simulate
 CC=g++-5
 CFLAGS=-O3 -Wall -Werror -pedantic -ansi -lm -lconfig++ -I ~/.include/ -fopenmp
 COMPILE_COMMAND=$(CC) $(CFLAGS)
 
-all: ${FILE}.cpp
-	$(COMPILE_COMMAND) -o $(FILE) $(FILE).cpp HPR.cpp
+all: ${INFILE}.cpp
+	$(COMPILE_COMMAND) -o $(OUTFILE) $(INFILE).cpp HPR.cpp
 
 clean: 
 	find . -name '*~' -delete

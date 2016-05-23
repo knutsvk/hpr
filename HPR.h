@@ -11,13 +11,12 @@
 #include <Eigen/Dense> // determinant() 
 #include <boost/numeric/odeint.hpp> // ode integrator
 #include <omp.h> // openmp parallelisation
+#include <libconfig.h++> // configuration files
 
 #include "SimpleArray.h"
 
 /* TODO
  * initial conditions
- * - from input file
- * - constant in domain
  * - varying as f(x,y)
  * viscous test cases
  *  - first problem of stokes
@@ -34,6 +33,8 @@
 enum Direction{ horizontal, vertical, radial };
 enum BoundaryCondition{ transmissive, reflective, periodic };
 
+// Base class for Hyperbolic Peshkov Romenski based solver
+
 class HyperbolicPeshkovRomenski
 {
     protected: 
@@ -44,7 +45,7 @@ class HyperbolicPeshkovRomenski
         int nCellsY; // amount of cells in the y-direction
         int nGhostCells; // ghost cells outside domain
         int nCellsTot; // total amount of cells
-        double domain[4]; // xmin = domain[0], xmax = domain[1], ymin = domain[2], ...
+        double domain[4]; // xmin = domain[0], xmax = domain[1], ymin = domain[2],
         double dx; // cell width in x-direction
         double dy; // cell width in y-direction
 
@@ -85,12 +86,9 @@ class HyperbolicPeshkovRomenski
 
         virtual double getTimeStep( double c_CFL ) = 0;
 
-        void initialize( double initDiscontPos, Direction initDiscontDir, 
-                double density_L, double density_R, 
-                SimpleArray< double, 3 > velocity_L, 
-                SimpleArray< double, 3 > velocity_R, 
-                Eigen::Matrix3d distortion_L, Eigen::Matrix3d distortion_R, 
-                double pressure_L, double pressure_R ); 
+        void initialize( double initDiscontPos, Direction initDiscontDir,
+                double density[2], SimpleArray< double, 3 > velocity[2],
+                Eigen::Matrix3d distortion[2], double pressure[2] ); 
                 
         void boundaryConditions( BoundaryCondition type[4] );
         void xSweep( double dt );
@@ -100,11 +98,13 @@ class HyperbolicPeshkovRomenski
         void output1DSlices( char* filename );
 };
 
+// Fluid class, inherits HPR
+
 class HPR_Fluid: public HyperbolicPeshkovRomenski
 {
     protected:
         double gamma; // adiabatic constant = c_V / c_p
-        double tau; // strain dissipation time, alternatively particle settled lifetime
+        double tau; // strain dissipation time / particle settled lifetime
         
     public:
         HPR_Fluid( double _shearSoundSpeed, double _referenceDensity, 
@@ -120,6 +120,8 @@ class HPR_Fluid: public HyperbolicPeshkovRomenski
 
         void integrateODE( double dt );
 };
+
+// Solid class, inherits HPR
 
 class HPR_Solid: public HyperbolicPeshkovRomenski
 {
@@ -152,8 +154,14 @@ struct HPR_ODE
     void operator()( const state_type& Q, state_type& S, const double t );
 };
 
-// Superbee slope limiter function
+// Functions independent of classes
 
 double slopeLimiter( double q_minus, double q_0, double q_plus );
+void configurate( const char* inputFile, int& nCellsX, int& nCellsY,
+        double& CFL, double& tStop, double& c_s, double& rho_0, double& gamma,
+        double& tau, double domain[4], double& initDiscontPos,
+        Direction& initDiscontDir, BoundaryCondition BCs[4], double
+        initDensity[2], SimpleArray< double, 3 > initVelocity[2],
+        Eigen::Matrix3d initDistortion[2], double initPressure[2] );
 
 #endif
