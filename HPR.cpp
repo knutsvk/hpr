@@ -323,10 +323,14 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     consVars[copyTo][1] *= - 1.0;
                     break;
                 case periodic: 
-                    if( i == 0 )
-                        copyFrom = nCellsTot - M + cell;
-                    else
-                        copyFrom = copyTo - M; 
+                    copyFrom = copyTo + M;
+                    if( consVars[nCellsTot - M + j][1] > 0.0 )
+                    {
+                        if( i == 0 )
+                            copyFrom = nCellsTot - M + j;
+                        else
+                            copyFrom = copyTo - M; 
+                    }
                     consVars[copyTo] = consVars[copyFrom];
                     break;
                 case constant:
@@ -348,10 +352,14 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     consVars[copyTo][1] *= - 1.0;
                     break;
                 case periodic: 
-                    if( i == 0 )
-                        copyFrom = M -1 - cell;
-                    else
-                        copyFrom = copyTo + M; 
+                    copyFrom = copyTo - M;
+                    if( consVars[M - 1 - j][1] < 0.0 )
+                    {
+                        if( i == 0 )
+                            copyFrom = M - 1 - j;
+                        else
+                            copyFrom = copyTo + M; 
+                    }
                     consVars[copyTo] = consVars[copyFrom];
                     break;
                 case constant:
@@ -381,10 +389,14 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     consVars[copyTo][2] *= - 1.0;
                     break;
                 case periodic: 
-                    if( i == 0 )
-                        copyFrom = cell + M - 1;
-                    else
-                        copyFrom = cell - 1; 
+                    copyFrom = copyTo + 1;
+                    if( consVars[cell + M - 1][2] > 0.0 )
+                    {
+                        if( i == 0 )
+                            copyFrom = cell + M - 1;
+                        else
+                            copyFrom = cell - 1; 
+                    }
                     consVars[copyTo] = consVars[copyFrom];
                     break;
                 case constant:
@@ -406,10 +418,14 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     consVars[copyTo][2] *= - 1.0;
                     break;
                 case periodic: 
-                    if( i == 0 )
-                        copyFrom = copyTo + 1 - M; 
-                    else
-                        copyFrom = copyTo + 1;
+                    copyFrom = copyTo - 1;
+                    if( consVars[copyTo + 1 - M][2] < 0.0 )
+                    {
+                        if( i == 0 )
+                            copyFrom = copyTo + 1 - M; 
+                        else
+                            copyFrom = copyTo + 1;
+                    }
                     consVars[copyTo] = consVars[copyFrom];
                     break;
                 case constant:
