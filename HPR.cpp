@@ -329,6 +329,8 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                         copyFrom = copyTo - M; 
                     consVars[copyTo] = consVars[copyFrom];
                     break;
+                case constant:
+                    break;
             }
 
             // Right boundary (x = xMax)
@@ -351,6 +353,8 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     else
                         copyFrom = copyTo + M; 
                     consVars[copyTo] = consVars[copyFrom];
+                    break;
+                case constant:
                     break;
             }
         }
@@ -383,6 +387,8 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                         copyFrom = cell - 1; 
                     consVars[copyTo] = consVars[copyFrom];
                     break;
+                case constant:
+                    break;
             }
 
             // Top boundary (y = yMax)
@@ -405,6 +411,8 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     else
                         copyFrom = copyTo + 1;
                     consVars[copyTo] = consVars[copyFrom];
+                    break;
+                case constant:
                     break;
             }
         }

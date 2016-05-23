@@ -31,7 +31,7 @@
 // Enumerators
 
 enum Direction{ horizontal, vertical, radial };
-enum BoundaryCondition{ transmissive, reflective, periodic };
+enum BoundaryCondition{ transmissive, reflective, periodic, constant };
 
 // Base class for Hyperbolic Peshkov Romenski based solver
 
