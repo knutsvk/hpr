@@ -18,6 +18,7 @@
 /* TODO
  * initial conditions
  * - varying as f(x,y)
+ * add non-conservative
  * viscous test cases
  *  - first problem of stokes
  *  - laminar boundary layer
@@ -25,7 +26,6 @@
  *  - lid driven cavity
  * rethink naming of classes 
  * comment code
- * add non-conservative ?
  */
 
 // Enumerators
