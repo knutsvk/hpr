@@ -7,7 +7,7 @@ int main( int argc, char* argv[] )
 {
     // Declaration of variables
     int Nx, Ny, iter;
-    double c, tStop, C_s, rho0, g, t_PSL, dom[4], x_0, rho[2], p[2], t, dt;
+    double c, tStop, C_s, rho0, g, t_PSL, dom[4], x_0, rho[2], p[2], t, dt, l;
     SimpleArray< double, 3 > u[2];
     Matrix3d A[2];
     BoundaryCondition BCs[4];
@@ -41,6 +41,7 @@ int main( int argc, char* argv[] )
     // Enter simulation loop
     t = 0.0;
     iter = 1;
+    l = 0.0;
     while(t < tStop)
     {
         dt = state.getTimeStep( c );
@@ -59,7 +60,13 @@ int main( int argc, char* argv[] )
 
         t += dt;
         iter++;
+        if( t / tStop > l / 100.0 )
+        {
+            cout << l << "% " << endl; 
+            l += 10.0;
+        }
     }
+    cout << "Done!" << endl; 
 
     // Write results to file
     sprintf( outputFile, "%s_1DSliceX_Nx%d_Ny%d.out", filename, Nx, Ny );
