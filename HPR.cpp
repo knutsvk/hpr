@@ -567,7 +567,7 @@ void HyperbolicPeshkovRomenski::output2D( char* filename )
     fs.close();
 }
 
-void HyperbolicPeshkovRomenski::output1DSlices( char* filename )
+void HyperbolicPeshkovRomenski::output1DSliceX( char* filename )
 {
     int cell;
     double x;
@@ -594,6 +594,38 @@ void HyperbolicPeshkovRomenski::output1DSlices( char* filename )
         e = microEnergy( rho, p );
 
         fs << x << "\t" << rho << "\t" << u[0] << "\t" << u[1] << "\t" 
+            << p << "\t" << e << "\t" << uAbs << std::endl;
+    }
+    fs.close();
+}
+
+void HyperbolicPeshkovRomenski::output1DSliceY( char* filename )
+{
+    int cell;
+    double y;
+    double rho; 
+    SimpleArray< double, 3 > u;
+    double uAbs;
+    double p; 
+    double e; 
+
+    std::ofstream fs; 
+    fs.open( filename );
+    fs << "y" << "\t" << "rho" << "\t" << "u" << "\t" << "v" << "\t" 
+        << "p" << "\t" << "e" << "\t" << "uAbs" << std::endl;
+
+    int i = nGhostCells + nCellsX / 2;
+    for( int j = nGhostCells; i < nGhostCells + nCellsY; i++ )
+    {
+        cell = i * ( nCellsY + 2 * nGhostCells ) + j;
+        y = domain[2] + (j - nGhostCells + 0.5 ) * dy; 
+        rho = getDensity( consVars[cell] );
+        u = getVelocity( consVars[cell] );
+        uAbs = sqrt( u[0] * u[0] + u[1] * u[1] + u[2] * u[2] );
+        p = getPressure( consVars[cell] );
+        e = microEnergy( rho, p );
+
+        fs << y << "\t" << rho << "\t" << u[0] << "\t" << u[1] << "\t" 
             << p << "\t" << e << "\t" << uAbs << std::endl;
     }
     fs.close();

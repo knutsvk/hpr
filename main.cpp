@@ -62,8 +62,10 @@ int main( int argc, char* argv[] )
     }
 
     // Write results to file
-    sprintf( outputFile, "%s_1DSlices_Nx%d_Ny%d.out", filename, Nx, Ny );
-    state.output1DSlices( outputFile );
-    sprintf( outputFile, "%s_2DSurfaces_Nx%d_Ny%d.out", filename, Nx, Ny );
+    sprintf( outputFile, "%s_1DSliceX_Nx%d_Ny%d.out", filename, Nx, Ny );
+    state.output1DSliceX( outputFile );
+    sprintf( outputFile, "%s_1DSliceY_Nx%d_Ny%d.out", filename, Nx, Ny );
+    state.output1DSliceY( outputFile );
+    sprintf( outputFile, "%s_2D_Nx%d_Ny%d.out", filename, Nx, Ny );
     state.output2D( outputFile );
 }

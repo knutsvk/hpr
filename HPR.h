@@ -95,7 +95,8 @@ class HyperbolicPeshkovRomenski
         void ySweep( double dt );
         void renormalizeDistortion();
         void output2D( char* filename );
-        void output1DSlices( char* filename );
+        void output1DSliceX( char* filename );
+        void output1DSliceY( char* filename );
 };
 
 // Fluid class, inherits HPR
