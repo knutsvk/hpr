@@ -21,6 +21,8 @@ int main( int argc, char* argv[] )
     {
         cout << "Available simulations: " << std::endl 
             << "CylindricalShock" << std::endl 
+            << "PeriodicWave" << std::endl
+            << "StokesFirstProblem" << std::endl
             << "Enter name of simulation to run: ";
         cin >> filename; 
     }
@@ -43,7 +45,7 @@ int main( int argc, char* argv[] )
     {
         dt = state.getTimeStep( c );
         if( iter < 10 )
-            dt *= 0.1 / c;
+            dt *= 0.1;
         if( t + dt > tStop )
             dt = tStop - t;
 
@@ -60,8 +62,8 @@ int main( int argc, char* argv[] )
     }
 
     // Write results to file
-    sprintf( outputFile, "%s_Slices.out", filename );
+    sprintf( outputFile, "%s_1DSlices_Nx%d_Ny%d.out", filename, Nx, Ny );
     state.output1DSlices( outputFile );
-    sprintf( outputFile, "%s_Surface.out", filename );
+    sprintf( outputFile, "%s_2DSurfaces_Nx%d_Ny%d.out", filename, Nx, Ny );
     state.output2D( outputFile );
 }

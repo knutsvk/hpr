@@ -390,12 +390,12 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     break;
                 case periodic: 
                     copyFrom = copyTo + 1;
-                    if( consVars[cell + M - 1][2] > 0.0 )
+                    if( consVars[( i + 1 ) * M - 1][2] > 0.0 )
                     {
-                        if( i == 0 )
-                            copyFrom = cell + M - 1;
+                        if( j == 0 )
+                            copyFrom = ( i + 1 ) * M - 1;
                         else
-                            copyFrom = cell - 1; 
+                            copyFrom = copyTo - 1; 
                     }
                     consVars[copyTo] = consVars[copyFrom];
                     break;
@@ -419,9 +419,9 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     break;
                 case periodic: 
                     copyFrom = copyTo - 1;
-                    if( consVars[copyTo + 1 - M][2] < 0.0 )
+                    if( consVars[i * M][2] < 0.0 )
                     {
-                        if( i == 0 )
+                        if( j == 0 )
                             copyFrom = copyTo + 1 - M; 
                         else
                             copyFrom = copyTo + 1;
@@ -579,11 +579,11 @@ void HyperbolicPeshkovRomenski::output1DSlices( char* filename )
 
     std::ofstream fs; 
     fs.open( filename );
-    fs << "x" << "\t" << "rho" << "\t" << "u" << "\t" << "p" << "\t" << "e" <<
-        std::endl;
+    fs << "x" << "\t" << "rho" << "\t" << "u" << "\t" << "v" << "\t" 
+        << "p" << "\t" << "e" << "\t" << "uMax" << std::endl;
 
     int j = nGhostCells + nCellsY / 2;
-    for( int i = nGhostCells + nCellsX / 2; i < nGhostCells + nCellsX; i++ )
+    for( int i = nGhostCells; i < nGhostCells + nCellsX; i++ )
     {
         cell = i * ( nCellsY + 2 * nGhostCells ) + j;
         x = domain[0] + (i - nGhostCells + 0.5 ) * dx; 
@@ -593,8 +593,8 @@ void HyperbolicPeshkovRomenski::output1DSlices( char* filename )
         p = getPressure( consVars[cell] );
         e = microEnergy( rho, p );
 
-        fs << x << "\t" << rho << "\t" << uAbs << "\t" << p << "\t" << e <<
-            std::endl;
+        fs << x << "\t" << rho << "\t" << u[0] << "\t" << u[1] << "\t" 
+            << p << "\t" << e << "\t" << uAbs << std::endl;
     }
     fs.close();
 }
@@ -638,7 +638,7 @@ double HPR_Fluid::getTimeStep( const double c_CFL )
     double p;
     double a; 
 
-#pragma omp parallel for private( rho, u, p )
+#pragma omp parallel for private( rho, u, p, a )
     // TODO: reduce for loop with max
     for( int i = 0; i < nCellsTot; i++ )
     {
@@ -652,8 +652,8 @@ double HPR_Fluid::getTimeStep( const double c_CFL )
 
     double SxMax = *std::max_element( Sx.begin(), Sx.end() );
     double SyMax = *std::max_element( Sy.begin(), Sy.end() );
-
-    return dx / SxMax < dy / SyMax ? c_CFL * dx / SxMax : c_CFL * dy / SyMax;
+    double SMax = sqrt( SxMax * SxMax + SyMax * SyMax );
+    return c_CFL * std::min( dx, dy ) / SMax;
 }
 
 void HPR_Fluid::integrateODE( double dt )
@@ -840,7 +840,7 @@ void configurate( const char* inputFile, int& nCellsX, int& nCellsY,
 
     initDiscontDir = (Direction) dir_int;
 
-    tau = 6 * mu / (rho_0 * c_s * c_s );
+    tau = 6.0 * mu / (rho_0 * c_s * c_s );
 
     for( int i = 0; i < 2; i++ )
     {
