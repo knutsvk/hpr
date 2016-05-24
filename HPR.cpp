@@ -321,6 +321,7 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     copyFrom = copyTo + ( 2 * ( nGhostCells - i ) - 1 ) * M;
                     consVars[copyTo] = consVars[copyFrom];
                     consVars[copyTo][1] *= - 1.0;
+                    consVars[copyTo][2] = 0.0;
                     break;
                 case periodic: 
                     copyFrom = copyTo + M;
@@ -350,6 +351,7 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     copyFrom = copyTo - ( 2 * ( nGhostCells - i ) - 1 ) * M;
                     consVars[copyTo] = consVars[copyFrom];
                     consVars[copyTo][1] *= - 1.0;
+                    consVars[copyTo][2] = 0.0;
                     break;
                 case periodic: 
                     copyFrom = copyTo - M;
@@ -387,6 +389,7 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     copyFrom = copyTo + ( 2 * ( nGhostCells - j ) - 1 );
                     consVars[copyTo] = consVars[copyFrom];
                     consVars[copyTo][2] *= - 1.0;
+                    consVars[copyTo][1] = 0.0;
                     break;
                 case periodic: 
                     copyFrom = copyTo + 1;
@@ -416,6 +419,7 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     copyFrom = copyTo - ( 2 * ( nGhostCells - j ) - 1 );
                     consVars[copyTo] = consVars[copyFrom];
                     consVars[copyTo][2] *= - 1.0;
+                    consVars[copyTo][1] = 0.0;
                     break;
                 case periodic: 
                     copyFrom = copyTo - 1;
@@ -615,7 +619,7 @@ void HyperbolicPeshkovRomenski::output1DSliceY( char* filename )
         << "p" << "\t" << "e" << "\t" << "uAbs" << std::endl;
 
     int i = nGhostCells + nCellsX / 2;
-    for( int j = nGhostCells; i < nGhostCells + nCellsY; i++ )
+    for( int j = nGhostCells; j < nGhostCells + nCellsY; j++ )
     {
         cell = i * ( nCellsY + 2 * nGhostCells ) + j;
         y = domain[2] + (j - nGhostCells + 0.5 ) * dy; 
@@ -691,7 +695,7 @@ double HPR_Fluid::getTimeStep( const double c_CFL )
 void HPR_Fluid::integrateODE( double dt )
 {
     int cell; 
-    double tol = 1.0e-16;
+    double tol = 1.0e-12;
 
 #pragma omp parallel for private( cell )
     for( int i = nGhostCells; i < nGhostCells + nCellsX; i++ )
