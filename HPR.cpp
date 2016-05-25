@@ -215,7 +215,7 @@ Eigen::Matrix3d HyperbolicPeshkovRomenski::getShearStress(
 double HyperbolicPeshkovRomenski::mesoEnergy( Eigen::Matrix3d distortion )
 {
     Eigen::Matrix3d G = distortion.trace() * distortion;
-    return 0.25 * c_s * c_s * ( G.trace() - ( G * G ).trace() / 3.0 );
+    return 0.25 * c_s * c_s * ( ( G * G ).trace() - G.trace() * G.trace() / 3.0 );
 }
 
 double HyperbolicPeshkovRomenski::macroEnergy( SimpleArray< double, 3 > u )
