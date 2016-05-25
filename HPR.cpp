@@ -685,11 +685,9 @@ double HPR_Fluid::getTimeStep( const double c_CFL )
         Sx[i] = fabs( u[0] ) + a; 
         Sy[i] = fabs( u[1] ) + a; 
     }
-
     double SxMax = *std::max_element( Sx.begin(), Sx.end() );
     double SyMax = *std::max_element( Sy.begin(), Sy.end() );
-    double SMax = sqrt( SxMax * SxMax + SyMax * SyMax );
-    return c_CFL * std::min( dx, dy ) / SMax;
+    return c_CFL * std::min( dx / SxMax, dy / SyMax);
 }
 
 void HPR_Fluid::integrateODE( double dt )
@@ -705,7 +703,7 @@ void HPR_Fluid::integrateODE( double dt )
             cell = i * ( nCellsY + 2 * nGhostCells ) + j; 
             integrate_adaptive( make_controlled( tol, tol, stepper_type() ),
                     HPR_ODE( tau, rho_0 ), consVars[cell], 0.0, 0.0 + dt, 
-                    1.0e-4 * dt );
+                    1.0e-3 * dt );
         }
     }
     renormalizeDistortion();
