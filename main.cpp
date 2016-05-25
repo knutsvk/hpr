@@ -62,7 +62,7 @@ int main( int argc, char* argv[] )
         iter++;
         if( t / tStop > l / 100.0 )
         {
-            cout << l << "% " << endl; 
+            cout << "\r" << l << "%..." << flush; 
             l += 10.0;
         }
     }
