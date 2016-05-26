@@ -20,7 +20,6 @@
  * - varying as f(x,y)
  * add non-conservative
  * viscous test cases
- *  - first problem of stokes
  *  - laminar boundary layer
  * no-slip BC (reflective with const velocity)
  *  - lid driven cavity
