@@ -320,8 +320,8 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                 case reflective:
                     copyFrom = copyTo + ( 2 * ( nGhostCells - i ) - 1 ) * M;
                     consVars[copyTo] = consVars[copyFrom];
-                    consVars[copyTo][1] *= - 1.0;
-                    consVars[copyTo][2] *= - 1.0;
+                    consVars[copyTo][1] = - consVars[copyTo][1];
+                    consVars[copyTo][2] = - consVars[copyTo][2];
                     break;
                 case periodic: 
                     copyFrom = copyTo + M;
@@ -350,8 +350,8 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                 case reflective:
                     copyFrom = copyTo - ( 2 * ( nGhostCells - i ) - 1 ) * M;
                     consVars[copyTo] = consVars[copyFrom];
-                    consVars[copyTo][1] *= - 1.0;
-                    consVars[copyTo][2] *= - 1.0;
+                    consVars[copyTo][1] = - consVars[copyTo][1];
+                    consVars[copyTo][2] = - consVars[copyTo][2];
                     break;
                 case periodic: 
                     copyFrom = copyTo - M;
@@ -388,8 +388,8 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                 case reflective:
                     copyFrom = copyTo + ( 2 * ( nGhostCells - j ) - 1 );
                     consVars[copyTo] = consVars[copyFrom];
-                    consVars[copyTo][1] *= - 1.0;
-                    consVars[copyTo][2] *= - 1.0;
+                    consVars[copyTo][1] = - consVars[copyTo][1];
+                    consVars[copyTo][2] = - consVars[copyTo][2];
                     break;
                 case periodic: 
                     copyFrom = copyTo + 1;
@@ -418,8 +418,8 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                 case reflective:
                     copyFrom = copyTo - ( 2 * ( nGhostCells - j ) - 1 );
                     consVars[copyTo] = consVars[copyFrom];
-                    consVars[copyTo][1] *= - 1.0;
-                    consVars[copyTo][2] *= - 1.0;
+                    consVars[copyTo][1] = 2.0 * 1.0 - consVars[copyTo][1];
+                    consVars[copyTo][2] = - consVars[copyTo][2];
                     break;
                 case periodic: 
                     copyFrom = copyTo - 1;
