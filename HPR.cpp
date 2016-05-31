@@ -63,7 +63,7 @@ void HyperbolicPeshkovRomenski::yFlux(
         - sigma(1, 1) * u[1] - sigma(2, 1) * u[2];
 }
 
-void HyperbolicPeshkovRomenski::forceFlux( double dt, double dx, int dir, 
+void HyperbolicPeshkovRomenski::forceFlux( double dt, double dr, int dir, 
         const SimpleArray< double, 14 >& Q_L, 
         const SimpleArray< double, 14 >& Q_R, 
         SimpleArray< double, 14 >& F )
@@ -82,7 +82,7 @@ void HyperbolicPeshkovRomenski::forceFlux( double dt, double dx, int dir,
     }
 
     Q_0 = 0.5 * ( Q_L + Q_R )
-        + 0.5 * dt / dx * ( F_L - F_R );
+        + 0.5 * dt / dr * ( F_L - F_R );
 
     if( dir == 0 )
     {
@@ -94,10 +94,10 @@ void HyperbolicPeshkovRomenski::forceFlux( double dt, double dx, int dir,
     }
 
     F = 0.5 * ( F_0 + 0.5 * ( F_L + F_R ) ) 
-        + 0.25 * dx / dt * ( Q_L - Q_R ); 
+        + 0.25 * dr / dt * ( Q_L - Q_R ); 
 }
 
-void HyperbolicPeshkovRomenski::slicFlux( double dt, double dx, int dir, 
+void HyperbolicPeshkovRomenski::slicFlux( double dt, double dr, int dir, 
         const SimpleArray< double, 14 >& Q_2L, 
         const SimpleArray< double, 14 >& Q_L, 
         const SimpleArray< double, 14 >& Q_R, 
@@ -138,11 +138,12 @@ void HyperbolicPeshkovRomenski::slicFlux( double dt, double dx, int dir,
     }
 
     // Evolve by time 0.5 * dt
-    Q_L_bar = Q_L_plus + 0.5 * dt / dx * ( F_L_plus - F_R_plus );
-    Q_R_bar = Q_R_0 + 0.5 * dt / dx * ( F_L_0 - F_R_0 );
+    Q_L_bar = Q_L_plus + 0.5 * dt / dr * ( F_L_plus - F_R_plus );
+    Q_R_bar = Q_R_0 + 0.5 * dt / dr * ( F_L_0 - F_R_0 );
 
-    forceFlux( dt, dx, dir, Q_R_bar, Q_L_bar, F );
+    forceFlux( dt, dr, dir, Q_R_bar, Q_L_bar, F );
 }
+
 HyperbolicPeshkovRomenski::HyperbolicPeshkovRomenski( 
         double _shearSoundSpeed, double _referenceDensity, 
         int _nCellsX, int _nCellsY, double _domain[4] )
@@ -194,6 +195,40 @@ Eigen::Matrix3d HyperbolicPeshkovRomenski::getDistortion(
         }
     }
     return A;
+}
+
+Eigen::Matrix3d HyperbolicPeshkovRomenski::getCurlTerm( 
+        const SimpleArray< double, 14 >& Q_0, 
+        const SimpleArray< double, 14 >& Q_L, 
+        const SimpleArray< double, 14 >& Q_R,
+        const SimpleArray< double, 14 >& Q_B, 
+        const SimpleArray< double, 14 >& Q_T )
+{
+    Eigen::Matrix3d A_L = getDistortion( Q_L );
+    Eigen::Matrix3d A_R = getDistortion( Q_R );
+    Eigen::Matrix3d A_B = getDistortion( Q_B );
+    Eigen::Matrix3d A_T = getDistortion( Q_T );
+    SimpleArray< double, 3 > u = getVelocity( Q_0 );
+    Eigen::Matrix3d B; 
+    B(0, 0) = u[1] * ( ( A_T(0, 0) - A_B(0, 0) ) / ( 2.0 * dy ) 
+        - ( A_R(0, 1) - A_L(0, 1) ) / ( 2.0 * dx ) );
+    B(0, 1) = u[0] * ( ( A_R(0, 1) - A_L(0, 1) ) / ( 2.0 * dx ) 
+        - ( A_T(0, 0) - A_B(0, 0) ) / ( 2.0 * dy ) );
+    B(0, 2) = u[0] * ( ( A_R(0, 2) - A_L(0, 2) ) / ( 2.0 * dx ) ) 
+        + u[1] * ( ( A_T(0, 2) - A_B(0, 2) ) / ( 2.0 * dy ) );
+    B(1, 0) = u[1] * ( ( A_T(1, 0) - A_B(1, 0) ) / ( 2.0 * dy ) 
+        - ( A_R(1, 1) - A_L(1, 1) ) / ( 2.0 * dx ) );
+    B(1, 1) = u[0] * ( ( A_R(1, 1) - A_L(1, 1) ) / ( 2.0 * dx ) 
+        - ( A_T(1, 0) - A_B(1, 0) ) / ( 2.0 * dy ) );
+    B(1, 2) = u[0] * ( ( A_R(1, 2) - A_L(1, 2) ) / ( 2.0 * dx ) ) 
+        + u[1] * ( ( A_T(1, 2) - A_B(1, 2) ) / ( 2.0 * dy ) );
+    B(2, 0) = u[1] * ( ( A_T(2, 0) - A_B(2, 0) ) / ( 2.0 * dy ) 
+        - ( A_R(2, 1) - A_L(2, 1) ) / ( 2.0 * dx ) );
+    B(2, 1) = u[0] * ( ( A_R(2, 1) - A_L(2, 1) ) / ( 2.0 * dx ) 
+        - ( A_T(2, 0) - A_B(2, 0) ) / ( 2.0 * dy ) );
+    B(2, 2) = u[0] * ( ( A_R(2, 2) - A_L(2, 2) ) / ( 2.0 * dx ) ) 
+        + u[1] * ( ( A_T(2, 2) - A_B(2, 2) ) / ( 2.0 * dy ) );
+    return B;
 }
 
 double HyperbolicPeshkovRomenski::getEnergy(
@@ -541,12 +576,14 @@ void HyperbolicPeshkovRomenski::output2D( char* filename )
     double p; 
     Eigen::Matrix3d sigma;
 
+    Eigen::Matrix3d curlyguy;
+
     std::ofstream fs; 
     fs.open( filename );
     fs << "x" << "\t" << "y" << "\t" << "rho" << "\t" << "p" << "\t" 
         << "u" << "\t" << "v" << "\t" << "w" << "\t" << "sigma11" << "\t" 
         << "sigma12" << "\t" << "sigma13" << "\t" << "sigma22" << "\t" 
-        << "sigma23" << "\t" << "sigma33" << std::endl; 
+        << "sigma23" << "\t" << "sigma33" << "\t" << "curlynorm" << std::endl; 
 
     for( int i = nGhostCells; i < nGhostCells + nCellsX; i++ )
     {
@@ -559,12 +596,18 @@ void HyperbolicPeshkovRomenski::output2D( char* filename )
             u = getVelocity( consVars[cell] );
             p = getPressure( consVars[cell] );
             sigma = getShearStress( consVars[cell] );
+            curlyguy = getCurlTerm( consVars[cell], 
+                consVars[cell - nCellsY - 2 * nGhostCells], 
+                consVars[cell + nCellsY + 2 * nGhostCells], 
+                consVars[cell - 1], 
+                consVars[cell + 1] );
 
             fs << x << " \t" << y << " \t" 
                 << rho << " \t" << p << " \t" << u[0] << " \t" << u[1] << " \t" 
                 << u[2] << " \t" << sigma(0, 0) - p << "\t" << sigma(0, 1) << "\t"
                 << sigma(0, 2) << "\t" << sigma(1, 1) - p << "\t" 
-                << sigma(1, 2) << "\t" << sigma(2, 2) - p << "\t" << std::endl;
+                << sigma(1, 2) << "\t" << sigma(2, 2) - p << "\t" 
+                << curlyguy.norm() << std::endl;
         }
         fs << std::endl; 
     }
@@ -693,7 +736,7 @@ double HPR_Fluid::getTimeStep( const double c_CFL )
 void HPR_Fluid::integrateODE( double dt )
 {
     int cell; 
-    double tol = 1.0e-12;
+    double tol = 1.0e-16;
 
 #pragma omp parallel for private( cell )
     for( int i = nGhostCells; i < nGhostCells + nCellsX; i++ )
@@ -703,7 +746,7 @@ void HPR_Fluid::integrateODE( double dt )
             cell = i * ( nCellsY + 2 * nGhostCells ) + j; 
             integrate_adaptive( make_controlled( tol, tol, stepper_type() ),
                     HPR_ODE( tau, rho_0 ), consVars[cell], 0.0, 0.0 + dt, 
-                    1.0e-3 * dt );
+                    1.0e-6 * dt );
         }
     }
     renormalizeDistortion();

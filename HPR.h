@@ -25,6 +25,7 @@
  *  - lid driven cavity
  * rethink naming of classes 
  * comment code
+ * add non-newtonian
  */
 
 // Enumerators
@@ -54,11 +55,11 @@ class HyperbolicPeshkovRomenski
                 SimpleArray< double, 14 >& F );
         void yFlux( const SimpleArray< double, 14 >& Q, 
                 SimpleArray< double, 14 >& G );
-        void forceFlux( double dt, double dx, int dir, 
+        void forceFlux( double dt, double dr, int dir, 
                 const SimpleArray< double, 14 >& Q_L, 
                 const SimpleArray< double, 14 >& Q_R, 
                 SimpleArray< double, 14 >& F );
-        void slicFlux ( double dt, double dx, int dir, 
+        void slicFlux ( double dt, double dr, int dir, 
                 const SimpleArray< double, 14 >& Q_2L, 
                 const SimpleArray< double, 14 >& Q_L, 
                 const SimpleArray< double, 14 >& Q_R, 
@@ -74,6 +75,11 @@ class HyperbolicPeshkovRomenski
         double getDensity( const SimpleArray< double, 14 >& Q );
         SimpleArray< double, 3 > getVelocity( const SimpleArray< double, 14 >& Q );
         Eigen::Matrix3d getDistortion( const SimpleArray< double, 14 >& Q );
+        Eigen::Matrix3d getCurlTerm( const SimpleArray< double, 14 >& Q_0, 
+                const SimpleArray< double, 14 >& Q_L, 
+                const SimpleArray< double, 14 >& Q_R,
+                const SimpleArray< double, 14 >& Q_B, 
+                const SimpleArray< double, 14 >& Q_T );
         double getEnergy( const SimpleArray< double, 14 >& Q );
 
         virtual double getPressure( const SimpleArray< double, 14 >& Q ) = 0;

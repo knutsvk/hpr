@@ -12,11 +12,11 @@ int main( int argc, char* argv[] )
     Matrix3d A[2];
     BoundaryCondition BCs[4];
     Direction dir; 
-    char filename[50], inputFile[50], outputFile[50];
+    char sim[50], infile[50], outfile[50];
 
     // Find which simulation to run
     if( argc == 2 )
-        sprintf( filename, "%s", argv[1] );
+        sprintf( sim, "%s", argv[1] );
     else
     {
         cout << "Available simulations: " << std::endl 
@@ -24,12 +24,12 @@ int main( int argc, char* argv[] )
             << "PeriodicWave" << std::endl
             << "StokesFirstProblem" << std::endl
             << "Enter name of simulation to run: ";
-        cin >> filename; 
+        cin >> sim; 
     }
-    sprintf( inputFile, "%s.cfg", filename );
+    sprintf( infile, "%s.cfg", sim );
 
     // Get values from configuration file
-    configurate( inputFile, Nx, Ny, c, tStop, C_s, rho0, g, t_PSL, dom, x_0,
+    configurate( infile, Nx, Ny, c, tStop, C_s, rho0, g, t_PSL, dom, x_0,
             dir, BCs, rho, u, A, p );
 
     // Allocate memory, set material properties
@@ -62,6 +62,12 @@ int main( int argc, char* argv[] )
         iter++;
         if( t / tStop > l / 100.0 )
         {
+            sprintf( outfile, "%s_1DSliceX_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
+            state.output1DSliceX( outfile );
+            sprintf( outfile, "%s_1DSliceY_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
+            state.output1DSliceY( outfile );
+            sprintf( outfile, "%s_2D_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
+            state.output2D( outfile );
             cout << "\r" << l << "%..." << flush; 
             l += 10.0;
         }
@@ -69,10 +75,10 @@ int main( int argc, char* argv[] )
     cout << "Done!" << endl; 
 
     // Write results to file
-    sprintf( outputFile, "%s_1DSliceX_Nx%d_Ny%d.out", filename, Nx, Ny );
-    state.output1DSliceX( outputFile );
-    sprintf( outputFile, "%s_1DSliceY_Nx%d_Ny%d.out", filename, Nx, Ny );
-    state.output1DSliceY( outputFile );
-    sprintf( outputFile, "%s_2D_Nx%d_Ny%d.out", filename, Nx, Ny );
-    state.output2D( outputFile );
+    sprintf( outfile, "%s_1DSliceX_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
+    state.output1DSliceX( outfile );
+    sprintf( outfile, "%s_1DSliceY_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
+    state.output1DSliceY( outfile );
+    sprintf( outfile, "%s_2D_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
+    state.output2D( outfile );
 }
