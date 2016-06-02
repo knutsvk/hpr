@@ -144,6 +144,55 @@ void HyperbolicPeshkovRomenski::slicFlux( double dt, double dr, int dir,
     forceFlux( dt, dr, dir, Q_R_bar, Q_L_bar, F );
 }
 
+void HyperbolicPeshkovRomenski::finiteDiffNoncons( 
+        const SimpleArray< double, 14 >& Q_0, 
+        const SimpleArray< double, 14 >& Q_L, 
+        const SimpleArray< double, 14 >& Q_R, 
+        const SimpleArray< double, 14 >& Q_B, 
+        const SimpleArray< double, 14 >& Q_T, 
+        SimpleArray< double, 14 >& N )
+{
+    Eigen::Matrix3d A_L = getDistortion( Q_L );
+    Eigen::Matrix3d A_R = getDistortion( Q_R );
+    Eigen::Matrix3d A_B = getDistortion( Q_B );
+    Eigen::Matrix3d A_T = getDistortion( Q_T );
+    SimpleArray< double, 3> u = getVelocity( Q_0 );
+
+    for( int i = 0; i < 4; i++ )
+    {
+        N[i] = 0.0;
+    }
+
+    N[4] = u[1] * ( ( A_R(0, 1) - A_L(0, 1) ) / ( 2.0 * dx ) 
+            - ( A_T(0, 0) - A_B(0, 0) ) / ( 2.0 * dy ) );
+
+    N[5] = u[0] * ( ( A_T(0, 0) - A_B(0, 0) ) / ( 2.0 * dy ) 
+            - ( A_R(0, 1) - A_L(0, 1) ) / ( 2.0 * dx ) );
+
+    N[6] = - u[0] * ( A_R(0, 2) - A_L(0, 2) ) / ( 2.0 * dx )
+        - u[1] * ( A_T(0, 1) - A_B(0, 1) ) / ( 2.0 * dy );
+
+    N[7] = u[1] * ( ( A_R(1, 1) - A_L(1, 1) ) / ( 2.0 * dx ) 
+            - ( A_T(1, 0) - A_B(1, 0) ) / ( 2.0 * dy ) );
+
+    N[8] = u[0] * ( ( A_T(1, 0) - A_B(1, 0) ) / ( 2.0 * dy ) 
+            - ( A_R(1, 1) - A_L(1, 1) ) / ( 2.0 * dx ) );
+
+    N[9] = - u[0] * ( A_R(1, 2) - A_L(1, 2) ) / ( 2.0 * dx )
+        - u[1] * ( A_T(1, 1) - A_B(1, 1) ) / ( 2.0 * dy );
+
+    N[10] = u[1] * ( ( A_R(2, 1) - A_L(2, 1) ) / ( 2.0 * dx ) 
+            - ( A_T(2, 0) - A_B(2, 0) ) / ( 2.0 * dy ) );
+
+    N[11] = u[0] * ( ( A_T(2, 0) - A_B(2, 0) ) / ( 2.0 * dy ) 
+            - ( A_R(2, 1) - A_L(2, 1) ) / ( 2.0 * dx ) );
+
+    N[12] = - u[0] * ( A_R(2, 2) - A_L(2, 2) ) / ( 2.0 * dx )
+        - u[1] * ( A_T(2, 1) - A_B(2, 1) ) / ( 2.0 * dy );
+
+    N[13] = 0.0;
+}
+
 HyperbolicPeshkovRomenski::HyperbolicPeshkovRomenski( 
         double _shearSoundSpeed, double _referenceDensity, 
         int _nCellsX, int _nCellsY, double _domain[4] )
@@ -540,6 +589,36 @@ void HyperbolicPeshkovRomenski::ySweep( double dt )
                     tempVars[cell + 2],
                     F_T );
             consVars[cell] = tempVars[cell] + dt / dy * ( F_B - F_T ); 
+        }
+    } 
+    renormalizeDistortion();
+}
+
+void HyperbolicPeshkovRomenski::addNonconservative( double dt )
+{
+    std::vector< SimpleArray< double, 14 > > tempVars( nCellsTot );
+#pragma omp parallel for 
+    for( int i = 0; i < nCellsTot; i++ )
+    {
+        tempVars[i] = consVars[i];
+    } 
+    
+    int cell;
+    SimpleArray< double, 14 > N;
+#pragma omp parallel for private( cell, N )
+    for( int i = nGhostCells; i < nGhostCells + nCellsX; i++ )
+    {
+        for( int j = nGhostCells; j < nGhostCells + nCellsY; j++ )
+        {
+            cell = i * ( nCellsY + 2 * nGhostCells ) + j; 
+            // TODO: use boundary extrapolated values insted of FD for gradient
+            finiteDiffNoncons( tempVars[cell], 
+                    tempVars[cell - ( nCellsY + 2 * nGhostCells )], 
+                    tempVars[cell + ( nCellsY + 2 * nGhostCells )], 
+                    tempVars[cell - 1], 
+                    tempVars[cell + 1], 
+                    N ); 
+            consVars[cell] = tempVars[cell] + dt * N; 
         }
     } 
     renormalizeDistortion();

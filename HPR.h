@@ -65,6 +65,13 @@ class HyperbolicPeshkovRomenski
                 const SimpleArray< double, 14 >& Q_R, 
                 const SimpleArray< double, 14 >& Q_2R, 
                 SimpleArray< double, 14 >& F );
+        void finiteDiffNoncons( 
+                const SimpleArray< double, 14 >& Q_0, 
+                const SimpleArray< double, 14 >& Q_L, 
+                const SimpleArray< double, 14 >& Q_R, 
+                const SimpleArray< double, 14 >& Q_B, 
+                const SimpleArray< double, 14 >& Q_T, 
+                SimpleArray< double, 14 >& N );
 
     public:
         HyperbolicPeshkovRomenski( 
@@ -98,6 +105,7 @@ class HyperbolicPeshkovRomenski
         void boundaryConditions( BoundaryCondition type[4] );
         void xSweep( double dt );
         void ySweep( double dt );
+        void addNonconservative( double dt );
         void renormalizeDistortion();
         void output2D( char* filename );
         void output1DSliceX( char* filename );

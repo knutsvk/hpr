@@ -53,9 +53,11 @@ int main( int argc, char* argv[] )
         state.boundaryConditions( BCs );
 
         state.integrateODE( 0.5 * dt );
+        state.addNonconservative( 0.5 * dt );
         state.xSweep( 0.5 * dt );
         state.ySweep( dt );
         state.xSweep( 0.5 * dt );
+        state.addNonconservative( 0.5 * dt );
         state.integrateODE( 0.5 * dt );
 
         t += dt;
