@@ -618,7 +618,7 @@ void HyperbolicPeshkovRomenski::addNonconservative( double dt )
                     tempVars[cell - 1], 
                     tempVars[cell + 1], 
                     N ); 
-            consVars[cell] = tempVars[cell] + dt * N; 
+            consVars[cell] = tempVars[cell] - dt * N; 
         }
     } 
     renormalizeDistortion();
