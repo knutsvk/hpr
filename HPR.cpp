@@ -144,7 +144,7 @@ void HyperbolicPeshkovRomenski::slicFlux( double dt, double dr, int dir,
     forceFlux( dt, dr, dir, Q_R_bar, Q_L_bar, F );
 }
 
-void HyperbolicPeshkovRomenski::nonconservativeTerms( double dt, int dir, 
+void HyperbolicPeshkovRomenski::nonconservativeTerms( int dir, 
         const SimpleArray< double, 14 >& Q_L, 
         const SimpleArray< double, 14 >& Q_0, 
         const SimpleArray< double, 14 >& Q_R, 
