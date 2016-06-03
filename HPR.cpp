@@ -193,6 +193,69 @@ void HyperbolicPeshkovRomenski::finiteDiffNoncons(
     N[13] = 0.0;
 }
 
+void HyperbolicPeshkovRomenski::boundaryExtrapolatedNoncons( 
+        const SimpleArray< double, 14 >& Q_0, 
+        const SimpleArray< double, 14 >& Q_L, 
+        const SimpleArray< double, 14 >& Q_R, 
+        const SimpleArray< double, 14 >& Q_B, 
+        const SimpleArray< double, 14 >& Q_T, 
+        SimpleArray< double, 14 >& N )
+{
+    SimpleArray< double, 14 > xi_x, xi_y, Q_LI, Q_RI, Q_BI, Q_TI; 
+
+    // Calculate TVD slope limiters
+    for( int j = 0; j < 14; j++ )
+    {
+        xi_x[j] = slopeLimiter( Q_L[j], Q_0[j], Q_R[j] );
+        xi_y[j] = slopeLimiter( Q_B[j], Q_0[j], Q_T[j] );
+    }
+
+    // Boundary extrapolated values
+    Q_LI = Q_0 - 0.25 * xi_x * ( Q_R - Q_L );
+    Q_RI = Q_0 + 0.25 * xi_x * ( Q_R - Q_L );
+    Q_BI = Q_0 - 0.25 * xi_y * ( Q_T - Q_B );
+    Q_TI = Q_0 + 0.25 * xi_y * ( Q_T - Q_B );
+
+    Eigen::Matrix3d A_L = getDistortion( Q_LI );
+    Eigen::Matrix3d A_R = getDistortion( Q_RI );
+    Eigen::Matrix3d A_B = getDistortion( Q_BI );
+    Eigen::Matrix3d A_T = getDistortion( Q_TI );
+
+    for( int i = 0; i < 4; i++ )
+    {
+        N[i] = 0.0;
+    }
+
+    N[4] = u[1] * ( ( A_R(0, 1) - A_L(0, 1) ) / dx 
+            - ( A_T(0, 0) - A_B(0, 0) ) / dy );
+
+    N[5] = u[0] * ( ( A_T(0, 0) - A_B(0, 0) ) / dy
+            - ( A_R(0, 1) - A_L(0, 1) ) / dx );
+
+    N[6] = - u[0] * ( A_R(0, 2) - A_L(0, 2) ) / dx
+        - u[1] * ( A_T(0, 2) - A_B(0, 2) ) / dy;
+
+    N[7] = u[1] * ( ( A_R(1, 1) - A_L(1, 1) ) / dx
+            - ( A_T(1, 0) - A_B(1, 0) ) / dy );
+
+    N[8] = u[0] * ( ( A_T(1, 0) - A_B(1, 0) ) / dy
+            - ( A_R(1, 1) - A_L(1, 1) ) / dx );
+
+    N[9] = - u[0] * ( A_R(1, 2) - A_L(1, 2) ) / dx
+        - u[1] * ( A_T(1, 2) - A_B(1, 2) ) / dy;
+
+    N[10] = u[1] * ( ( A_R(2, 1) - A_L(2, 1) ) / dx 
+            - ( A_T(2, 0) - A_B(2, 0) ) / dy );
+
+    N[11] = u[0] * ( ( A_T(2, 0) - A_B(2, 0) ) / dy 
+            - ( A_R(2, 1) - A_L(2, 1) ) / dx );
+
+    N[12] = - u[0] * ( A_R(2, 2) - A_L(2, 2) ) / dx
+        - u[1] * ( A_T(2, 2) - A_B(2, 2) ) / dy;
+
+    N[13] = 0.0;
+}
+
 HyperbolicPeshkovRomenski::HyperbolicPeshkovRomenski( 
         double _shearSoundSpeed, double _referenceDensity, 
         int _nCellsX, int _nCellsY, double _domain[4] )
@@ -622,7 +685,13 @@ void HyperbolicPeshkovRomenski::addNonconservative( double dt )
         {
             cell = i * ( nCellsY + 2 * nGhostCells ) + j; 
             // TODO: use boundary extrapolated values insted of FD for gradient
-            finiteDiffNoncons( tempVars[cell], 
+/*            finiteDiffNoncons( tempVars[cell], 
+                    tempVars[cell - ( nCellsY + 2 * nGhostCells )], 
+                    tempVars[cell + ( nCellsY + 2 * nGhostCells )], 
+                    tempVars[cell - 1], 
+                    tempVars[cell + 1], 
+                    N ); */
+            boundaryExtrapolatedNoncons( tempVars[cell], 
                     tempVars[cell - ( nCellsY + 2 * nGhostCells )], 
                     tempVars[cell + ( nCellsY + 2 * nGhostCells )], 
                     tempVars[cell - 1], 

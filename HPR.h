@@ -72,6 +72,13 @@ class HyperbolicPeshkovRomenski
                 const SimpleArray< double, 14 >& Q_B, 
                 const SimpleArray< double, 14 >& Q_T, 
                 SimpleArray< double, 14 >& N );
+        void boundaryExtrapolatedNoncons( 
+                const SimpleArray< double, 14 >& Q_0, 
+                const SimpleArray< double, 14 >& Q_L, 
+                const SimpleArray< double, 14 >& Q_R, 
+                const SimpleArray< double, 14 >& Q_B, 
+                const SimpleArray< double, 14 >& Q_T, 
+                SimpleArray< double, 14 >& N );
 
     public:
         HyperbolicPeshkovRomenski( 
