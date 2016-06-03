@@ -44,6 +44,18 @@ int main( int argc, char* argv[] )
     l = 0.0;
     while(t < tStop)
     {
+        if( t / tStop > l / 100.0 )
+        {
+            sprintf( outfile, "%s_1DSliceX_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
+            state.output1DSliceX( outfile );
+            sprintf( outfile, "%s_1DSliceY_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
+            state.output1DSliceY( outfile );
+            sprintf( outfile, "%s_2D_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
+            state.output2D( outfile );
+            cout << "\r" << l << "%..." << flush; 
+            l += 10.0;
+        }
+
         dt = state.getTimeStep( c );
         if( iter < 10 )
             dt *= 0.1;
@@ -60,17 +72,6 @@ int main( int argc, char* argv[] )
 
         t += dt;
         iter++;
-        if( t / tStop > l / 100.0 )
-        {
-            sprintf( outfile, "%s_1DSliceX_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
-            state.output1DSliceX( outfile );
-            sprintf( outfile, "%s_1DSliceY_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
-            state.output1DSliceY( outfile );
-            sprintf( outfile, "%s_2D_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
-            state.output2D( outfile );
-            cout << "\r" << l << "%..." << flush; 
-            l += 10.0;
-        }
     }
     cout << "Done!" << endl; 
 
