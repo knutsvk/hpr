@@ -44,7 +44,7 @@ int main( int argc, char* argv[] )
     l = 0.0;
     while(t < tStop)
     {
-        if( t / tStop > l / 100.0 )
+        if( t / tStop >= l / 100.0 )
         {
             sprintf( outfile, "%s_1DSliceX_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
             state.output1DSliceX( outfile );
