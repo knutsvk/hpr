@@ -170,7 +170,7 @@ void HyperbolicPeshkovRomenski::finiteDiffNoncons(
             - ( A_R(0, 1) - A_L(0, 1) ) / ( 2.0 * dx ) );
 
     N[6] = - u[0] * ( A_R(0, 2) - A_L(0, 2) ) / ( 2.0 * dx )
-        - u[1] * ( A_T(0, 1) - A_B(0, 1) ) / ( 2.0 * dy );
+        - u[1] * ( A_T(0, 2) - A_B(0, 2) ) / ( 2.0 * dy );
 
     N[7] = u[1] * ( ( A_R(1, 1) - A_L(1, 1) ) / ( 2.0 * dx ) 
             - ( A_T(1, 0) - A_B(1, 0) ) / ( 2.0 * dy ) );
@@ -179,7 +179,7 @@ void HyperbolicPeshkovRomenski::finiteDiffNoncons(
             - ( A_R(1, 1) - A_L(1, 1) ) / ( 2.0 * dx ) );
 
     N[9] = - u[0] * ( A_R(1, 2) - A_L(1, 2) ) / ( 2.0 * dx )
-        - u[1] * ( A_T(1, 1) - A_B(1, 1) ) / ( 2.0 * dy );
+        - u[1] * ( A_T(1, 2) - A_B(1, 2) ) / ( 2.0 * dy );
 
     N[10] = u[1] * ( ( A_R(2, 1) - A_L(2, 1) ) / ( 2.0 * dx ) 
             - ( A_T(2, 0) - A_B(2, 0) ) / ( 2.0 * dy ) );
@@ -188,7 +188,7 @@ void HyperbolicPeshkovRomenski::finiteDiffNoncons(
             - ( A_R(2, 1) - A_L(2, 1) ) / ( 2.0 * dx ) );
 
     N[12] = - u[0] * ( A_R(2, 2) - A_L(2, 2) ) / ( 2.0 * dx )
-        - u[1] * ( A_T(2, 1) - A_B(2, 1) ) / ( 2.0 * dy );
+        - u[1] * ( A_T(2, 2) - A_B(2, 2) ) / ( 2.0 * dy );
 
     N[13] = 0.0;
 }
@@ -259,24 +259,34 @@ Eigen::Matrix3d HyperbolicPeshkovRomenski::getCurlTerm(
     Eigen::Matrix3d A_T = getDistortion( Q_T );
     SimpleArray< double, 3 > u = getVelocity( Q_0 );
     Eigen::Matrix3d B; 
+
     B(0, 0) = u[1] * ( ( A_T(0, 0) - A_B(0, 0) ) / ( 2.0 * dy ) 
         - ( A_R(0, 1) - A_L(0, 1) ) / ( 2.0 * dx ) );
+
     B(0, 1) = u[0] * ( ( A_R(0, 1) - A_L(0, 1) ) / ( 2.0 * dx ) 
         - ( A_T(0, 0) - A_B(0, 0) ) / ( 2.0 * dy ) );
+
     B(0, 2) = u[0] * ( ( A_R(0, 2) - A_L(0, 2) ) / ( 2.0 * dx ) ) 
         + u[1] * ( ( A_T(0, 2) - A_B(0, 2) ) / ( 2.0 * dy ) );
+
     B(1, 0) = u[1] * ( ( A_T(1, 0) - A_B(1, 0) ) / ( 2.0 * dy ) 
         - ( A_R(1, 1) - A_L(1, 1) ) / ( 2.0 * dx ) );
+
     B(1, 1) = u[0] * ( ( A_R(1, 1) - A_L(1, 1) ) / ( 2.0 * dx ) 
         - ( A_T(1, 0) - A_B(1, 0) ) / ( 2.0 * dy ) );
+
     B(1, 2) = u[0] * ( ( A_R(1, 2) - A_L(1, 2) ) / ( 2.0 * dx ) ) 
         + u[1] * ( ( A_T(1, 2) - A_B(1, 2) ) / ( 2.0 * dy ) );
+
     B(2, 0) = u[1] * ( ( A_T(2, 0) - A_B(2, 0) ) / ( 2.0 * dy ) 
         - ( A_R(2, 1) - A_L(2, 1) ) / ( 2.0 * dx ) );
+
     B(2, 1) = u[0] * ( ( A_R(2, 1) - A_L(2, 1) ) / ( 2.0 * dx ) 
         - ( A_T(2, 0) - A_B(2, 0) ) / ( 2.0 * dy ) );
+
     B(2, 2) = u[0] * ( ( A_R(2, 2) - A_L(2, 2) ) / ( 2.0 * dx ) ) 
         + u[1] * ( ( A_T(2, 2) - A_B(2, 2) ) / ( 2.0 * dy ) );
+
     return B;
 }
 
