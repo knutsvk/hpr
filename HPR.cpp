@@ -220,6 +220,7 @@ void HyperbolicPeshkovRomenski::boundaryExtrapolatedNoncons(
     Eigen::Matrix3d A_R = getDistortion( Q_RI );
     Eigen::Matrix3d A_B = getDistortion( Q_BI );
     Eigen::Matrix3d A_T = getDistortion( Q_TI );
+    SimpleArray< double, 3 > u = getVelocity( Q_0 );
 
     for( int i = 0; i < 4; i++ )
     {
