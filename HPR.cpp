@@ -811,7 +811,7 @@ double HPR_Fluid::getTimeStep( const double c_CFL )
 void HPR_Fluid::integrateODE( double dt )
 {
     int cell; 
-    double tol = 1.0e-32;
+    double tol = 1.0e-20;
 
 #pragma omp parallel for private( cell )
     for( int i = nGhostCells; i < nGhostCells + nCellsX; i++ )
@@ -821,7 +821,7 @@ void HPR_Fluid::integrateODE( double dt )
             cell = i * ( nCellsY + 2 * nGhostCells ) + j; 
             integrate_adaptive( make_controlled( tol, tol, stepper_type() ),
                     HPR_ODE( tau, rho_0 ), consVars[cell], 0.0, 0.0 + dt, 
-                    1.0e-10 * dt );
+                    1.0e-6 * dt );
         }
     }
     renormalizeDistortion();
