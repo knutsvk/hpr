@@ -129,7 +129,7 @@ void HyperbolicPeshkovRomenski::slicFlux( double dt, double dr, int dir,
         xFlux( Q_L_0, F_L_0 );
         xFlux( Q_R_0, F_R_0 );
     }
-    else 
+    else if( dir == 1 )
     {
         yFlux( Q_L_plus, F_L_plus );
         yFlux( Q_R_plus, F_R_plus );
@@ -144,7 +144,7 @@ void HyperbolicPeshkovRomenski::slicFlux( double dt, double dr, int dir,
     forceFlux( dt, dr, dir, Q_R_bar, Q_L_bar, F );
 }
 
-void HyperbolicPeshkovRomenski::nonconservativeTerms( int dir, 
+void HyperbolicPeshkovRomenski::nonconservativeTerms( double dt, int dir, 
         const SimpleArray< double, 14 >& Q_L, 
         const SimpleArray< double, 14 >& Q_0, 
         const SimpleArray< double, 14 >& Q_R, 
@@ -811,7 +811,7 @@ double HPR_Fluid::getTimeStep( const double c_CFL )
 void HPR_Fluid::integrateODE( double dt )
 {
     int cell; 
-    double tol = 1.0e-20;
+    double tol = 1.0e-12;
 
 #pragma omp parallel for private( cell )
     for( int i = nGhostCells; i < nGhostCells + nCellsX; i++ )
