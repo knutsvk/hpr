@@ -727,6 +727,7 @@ void HyperbolicPeshkovRomenski::output2D( char* filename )
             y = domain[2] + (j - nGhostCells + 0.5 ) * dy; 
             rho = getDensity( consVars[cell] );
             u = getVelocity( consVars[cell] );
+            A = getDistortion( consVars[cell] );
             curlyguy = getCurlTerm( consVars[cell], 
                 consVars[cell - nCellsY - 2 * nGhostCells], 
                 consVars[cell + nCellsY + 2 * nGhostCells], 
