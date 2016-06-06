@@ -596,6 +596,56 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
     }
 }
 
+void HyperbolicPeshkovRomenski::periodicBoundaryConditions()
+{
+    int M = nCellsY + 2 * nGhostCells; 
+
+    // Left and right boundaries
+    for( int j = nGhostCells; j < nGhostCells + nCellsY; j++ )
+    {
+        // Find directino of flow
+        if( consVars[nGhostCells * M + j][1] > 0.0 )
+        { // Flow towards right
+            assert(consVars[nCellsTot + j - 3 * M][1] >= 0.0 );
+            consVars[j + M] = consVars[j]; 
+            consVars[j] = consVars[nCellsTot + j - 3 * M];
+            consVars[nCellsTot + j - M] = consVars[nCellsTot + j - 2 * M];
+            consVars[nCellsTot + j - 2 * M] = consVars[nCellsTot + j - 3 * M];
+        }
+        else
+        { // Flow towards left
+            assert(consVars[nCellsTot + j - 3 * M][1] < 0.0 );
+            consVars[j] = consVars[j + M];
+            consVars[j + M] = consVars[j + 2 * M]; 
+            consVars[nCellsTot + j - 2 * M] = consVars[nCellsTot + j - M];
+            consVars[nCellsTot + j - M] = consVars[j + 2 * M];
+        }
+    }
+
+    // Bottom and top boundaries 
+    for( int i = nGhostCells; i < nGhostCells + nCellsX; i++ )
+    {
+        // Find directino of flow
+        if( consVars[i * M + 2][2] > 0.0 )
+        { // Flow upwards
+            assert(consVars[( i + 1 ) * M - 3][2] >= 0.0 );
+            consVars[i * M + 1] = consVars[i * M]; 
+            consVars[i * M] = consVars[( i + 1 ) * M - 3];
+            consVars[( i + 1 ) * M - 1] = consVars[( i + 1 ) * M - 2];
+            consVars[( i + 1 ) * M - 2] = consVars[( i + 1 ) * M - 3];
+        }
+        else
+        { // Flow downwards
+            assert(consVars[( i + 1 ) * M - 3][2] < 0.0 );
+            consVars[i * M] = consVars[i * M + 1];
+            consVars[i * M + 1] = consVars[i * M + 2]; 
+            consVars[( i + 1 ) * M - 2] = consVars[( i + 1 ) * M - 1];
+            consVars[( i + 1 ) * M - 1] = consVars[i * M + 2];
+        }
+    }
+}
+
+
 void HyperbolicPeshkovRomenski::xSweep( double dt )
 {
     std::vector< SimpleArray< double, 14 > > tempVars( nCellsTot );
