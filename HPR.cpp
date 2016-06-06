@@ -594,7 +594,7 @@ void HyperbolicPeshkovRomenski::periodicBoundaryConditions()
         }
         else
         { // Flow towards left
-            assert(consVars[nCellsTot + j - 3 * M][1] < 0.0 );
+            assert(consVars[nCellsTot + j - 3 * M][1] <= 0.0 );
             consVars[j] = consVars[j + M];
             consVars[j + M] = consVars[j + 2 * M]; 
             consVars[nCellsTot + j - 2 * M] = consVars[nCellsTot + j - M];
@@ -616,7 +616,7 @@ void HyperbolicPeshkovRomenski::periodicBoundaryConditions()
         }
         else
         { // Flow downwards
-            assert(consVars[( i + 1 ) * M - 3][2] < 0.0 );
+            assert(consVars[( i + 1 ) * M - 3][2] <= 0.0 );
             consVars[i * M] = consVars[i * M + 1];
             consVars[i * M + 1] = consVars[i * M + 2]; 
             consVars[( i + 1 ) * M - 2] = consVars[( i + 1 ) * M - 1];
