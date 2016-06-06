@@ -36,7 +36,10 @@ int main( int argc, char* argv[] )
     HPR_Fluid state( C_s, rho0, Nx, Ny, dom, g, t_PSL );
 
     // Apply initial conditions
-    state.initialize( x_0, dir, rho, u, A, p );
+    if( !strcmp( sim, "DoubleShearLayer") )
+        state.initializeDoubleShearLayer();
+    else
+        state.initialize( x_0, dir, rho, u, A, p );
 
     // Enter simulation loop
     t = 0.0;

@@ -94,6 +94,7 @@ class HyperbolicPeshkovRomenski
         void initialize( double initDiscontPos, Direction initDiscontDir,
                 double density[2], SimpleArray< double, 3 > velocity[2],
                 Eigen::Matrix3d distortion[2], double pressure[2] ); 
+        void initializeDoubleShearLayer();
                 
         void boundaryConditions( BoundaryCondition type[4] );
         void xSweep( double dt );
