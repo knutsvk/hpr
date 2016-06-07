@@ -740,8 +740,8 @@ void HyperbolicPeshkovRomenski::output2D( char* filename )
             A = getDistortion( consVars[cell] );
             omega = 0.5 / dx * (consVars[cell + M][2] / consVars[cell + M][0] -
                     consVars[cell - M][2] / consVars[cell - M][0] )
-                - 0.5 / dy * (consVars[cell + 1][2] / consVars[cell + 1][0] -
-                    consVars[cell - 1][2] / consVars[cell - 1][0] );
+                - 0.5 / dy * (consVars[cell + 1][1] / consVars[cell + 1][0] -
+                    consVars[cell - 1][1] / consVars[cell - 1][0] );
 
             curlyguy = getCurlTerm( consVars[cell], 
                 consVars[cell - nCellsY - 2 * nGhostCells], 
