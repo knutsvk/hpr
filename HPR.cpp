@@ -21,13 +21,13 @@ void HyperbolicPeshkovRomenski::xFlux(
     F[1] = rho * u[0] * u[0] - sigma(0, 0) + p;
     F[2] = rho * u[0] * u[1] - sigma(1, 0);
     F[3] = rho * u[0] * u[2] - sigma(2, 0);
-    F[4] = A( 0, 0 ) * u[0] + A(0, 1) * u[1] + A(0, 2) * u [2];
+    F[4] = A(0, 0) * u[0] + A(0, 1) * u[1] + A(0, 2) * u[2];
     F[5] = 0.0;
     F[6] = 0.0;
-    F[7] = A(1, 0) * u[0] + A(1, 1) * u[1] + A(1, 2) * u [2];
+    F[7] = A(1, 0) * u[0] + A(1, 1) * u[1] + A(1, 2) * u[2];
     F[8] = 0.0;
     F[9] = 0.0;
-    F[10] = A(2, 0) * u[0] + A(2, 1) * u[1] + A(2, 2) * u [2];
+    F[10] = A(2, 0) * u[0] + A(2, 1) * u[1] + A(2, 2) * u[2];
     F[11] = 0.0;
     F[12] = 0.0;
     F[13] = rho * u[0] * E + u[0] * p - sigma(0, 0) * u[0] 
@@ -309,6 +309,7 @@ Eigen::Matrix3d HyperbolicPeshkovRomenski::getShearStress(
     Eigen::Matrix3d A = getDistortion( Q );
     Eigen::Matrix3d G = A.transpose() * A;
     Eigen::Matrix3d devG = G - G.trace() * Eigen::Matrix3d::Identity() / 3.0;
+    assert( fabs( devG.trace() ) < 1.0e-3);
     return - rho * c_s * c_s * G * devG;
 }
 
@@ -457,23 +458,23 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
             cell = i * M + j;
             
             // Left boundary (x = xMin)
-            copyTo = cell; 
-
-            switch (type[0] )
+            switch ( type[0] )
             {
                 case transmissive: 
+                    copyTo = cell;
                     copyFrom = copyTo + M; 
                     consVars[copyTo] = consVars[copyFrom];
                     break;
                 case reflective:
-                    copyFrom = copyTo + ( 2 * ( nGhostCells - i ) - 1 ) * M;
+/*                    copyFrom = copyTo + ( 2 * ( nGhostCells - i ) - 1 ) * M;
                     consVars[copyTo] = consVars[copyFrom];
                     for( int k = 1; k < 4; k++ )
                     {
                         consVars[copyTo][k] *= - 1.0;
-                    }
+                    }*/
                     break;
                 case periodic: 
+                    copyTo = cell; 
                     copyFrom = cell + nCellsX * M;
                     consVars[copyTo] = consVars[copyFrom];
                     break;
@@ -482,23 +483,23 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
             }
 
             // Right boundary (x = xMax)
-            copyTo = cell + ( nCellsX + nGhostCells ) * M;
-
             switch (type[1] )
             {
                 case transmissive: 
+                    copyTo = nCellsTot - ( 1 + cell );
                     copyFrom = copyTo - M; 
                     consVars[copyTo] = consVars[copyFrom];
                     break;
                 case reflective:
-                    copyFrom = copyTo - ( 2 * ( nGhostCells - i ) - 1 ) * M;
+/*                    copyFrom = copyTo - ( 2 * ( nGhostCells - i ) - 1 ) * M;
                     consVars[copyTo] = consVars[copyFrom];
                     for( int k = 1; k < 4; k++ )
                     {
                         consVars[copyTo][k] *= - 1.0;
-                    }
+                    }*/
                     break;
                 case periodic: 
+                    copyTo = cell + ( nCellsX + nGhostCells ) * M;
                     copyFrom = cell + nGhostCells * M;
                     consVars[copyTo] = consVars[copyFrom];
                     break;
@@ -515,23 +516,23 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
             cell = i * M + j;
 
             // Bottom boundary (y = yMin)
-            copyTo = cell; 
-
             switch( type[2] )
             {
                 case transmissive: 
+                    copyTo = cell; 
                     copyFrom = copyTo + 1; 
                     consVars[copyTo] = consVars[copyFrom];
                     break;
                 case reflective:
-                    copyFrom = copyTo + ( 2 * ( nGhostCells - j ) - 1 );
+/*                    copyFrom = copyTo + ( 2 * ( nGhostCells - j ) - 1 );
                     consVars[copyTo] = consVars[copyFrom];
                     for( int k = 1; k < 4; k++ )
                     {
                         consVars[copyTo][k] *= - 1.0;
-                    }
+                    }*/
                     break;
                 case periodic: 
+                    copyTo = cell; 
                     copyFrom = cell + nCellsY; 
                     consVars[copyTo] = consVars[copyFrom];
                     break;
@@ -540,24 +541,25 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
             }
 
             // Top boundary (y = yMax)
-            copyTo = cell + nCellsY + nGhostCells;
 
             switch( type[3] )
             {
                 case transmissive: 
+                    copyTo = ( i + 1 ) * M - ( 1 + j );
                     copyFrom = copyTo - 1; 
                     consVars[copyTo] = consVars[copyFrom];
                     break;
                 case reflective:
-                    copyFrom = copyTo - ( 2 * ( nGhostCells - j ) - 1 );
+/*                    copyFrom = copyTo - ( 2 * ( nGhostCells - j ) - 1 );
                     consVars[copyTo] = consVars[copyFrom];
                     for( int k = 1; k < 4; k++ )
                     {
                         consVars[copyTo][k] *= - 1.0;
                     }
-                    consVars[copyTo][1] += 2.0;
+                    consVars[copyTo][1] += 2.0;*/
                     break;
                 case periodic: 
+                    copyTo = cell + nCellsY + nGhostCells;
                     copyFrom = cell + nGhostCells; 
                     consVars[copyTo] = consVars[copyFrom];
                     break;
@@ -567,6 +569,34 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
         }
     }
 }
+
+void HyperbolicPeshkovRomenski::periodicBoundaryConditions()
+{
+    int M = nCellsY + 2 * nGhostCells; 
+
+    // Bottom and top boundaries
+    for( int i = nGhostCells; i < nGhostCells + nCellsX; i++ )
+    {
+        // Bottom
+        consVars[i * M] = consVars[i * M + nCellsY];
+        consVars[i * M + 1] = consVars[i * M + 1 + nCellsY];
+        // Top
+        consVars[i * M + nCellsY + nGhostCells] = consVars[i * M + nGhostCells];
+        consVars[i * M + nCellsY + nGhostCells + 1] = consVars[i * M + nGhostCells + 1];
+    }
+
+    // Left and right boundaries
+    for( int j = nGhostCells; j < nGhostCells + nCellsY; j++ )
+    {
+        // Left
+        consVars[j] = consVars[j + nCellsX * M]; 
+        consVars[j + M] = consVars[j + ( nCellsX + 1 ) * M];
+        // Right
+        consVars[j + ( nCellsX + nGhostCells ) * M] = consVars[j + nGhostCells * M];
+        consVars[j + ( nCellsX + nGhostCells + 1 ) * M] = consVars[j + ( nGhostCells + 1 ) * M];
+    }
+}
+
 
 void HyperbolicPeshkovRomenski::xSweep( double dt )
 {

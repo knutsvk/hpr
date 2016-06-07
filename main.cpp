@@ -19,11 +19,18 @@ int main( int argc, char* argv[] )
         sprintf( sim, "%s", argv[1] );
     else
     {
-        cout << "Available simulations: " << std::endl 
-            << "CylindricalShock" << std::endl 
-            << "PeriodicWave" << std::endl
-            << "StokesFirstProblem" << std::endl
-            << "Enter name of simulation to run: ";
+        cout << "Available simulations: " << endl << endl
+            << "CylindricalShock" << endl 
+            << "DoubleShearLayer" << endl
+            << "LaminarBoundaryLayer" << endl
+            << "LidDrivenCavity" << endl
+            << "PeriodicWave" << endl
+            << "StokesFirstProblem" << endl
+            << "Toro1" << endl
+            << "Toro2" << endl
+            << "Toro3" << endl
+            << "Toro4" << endl 
+            << endl << "Enter name of simulation to run: ";
         cin >> sim; 
     }
     sprintf( infile, "%s.cfg", sim );
@@ -56,7 +63,7 @@ int main( int argc, char* argv[] )
             sprintf( outfile, "%s_2D_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
             state.output2D( outfile );
             cout << "\r" << l << "%..." << flush; 
-            l += 10.0;
+            l += 1.0;
         }
 
         dt = state.getTimeStep( c );
