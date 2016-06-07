@@ -709,6 +709,7 @@ void HyperbolicPeshkovRomenski::renormalizeDistortion()
 
 void HyperbolicPeshkovRomenski::output2D( char* filename )
 {
+    int M = nCellsY + 2 * nGhostCells; 
     int cell; 
     double x, y;
     double rho; 
