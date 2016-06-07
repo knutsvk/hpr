@@ -16,12 +16,12 @@
 #include "SimpleArray.h"
 
 /* TODO
+ * vorticity 
+ * stream function
  * initial conditions
- * - varying as f(x,y)
- * add non-conservative
- * viscous test cases
- *  - laminar boundary layer
+ * - varying as f(x,y) in general
  * no-slip BC (reflective with const velocity)
+ *  - laminar boundary layer
  *  - lid driven cavity
  * rethink naming of classes 
  * comment code

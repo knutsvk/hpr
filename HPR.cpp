@@ -712,6 +712,7 @@ void HyperbolicPeshkovRomenski::output2D( char* filename )
     int cell; 
     double x, y;
     double rho; 
+    double omega;
     SimpleArray< double, 3 > u;
     Eigen::Matrix3d A;
 
@@ -724,7 +725,7 @@ void HyperbolicPeshkovRomenski::output2D( char* filename )
         << "A11" << "\t" << "A12" << "\t" << "A13" << "\t" 
         << "A21" << "\t" << "A22" << "\t" << "A23" << "\t" 
         << "A31" << "\t" << "A32" << "\t" << "A33" << "\t" 
-        << "curlynorm" << std::endl; 
+        << "omega" << "\t" << "curlynorm" << std::endl; 
 
     for( int i = nGhostCells; i < nGhostCells + nCellsX; i++ )
     {
@@ -736,6 +737,11 @@ void HyperbolicPeshkovRomenski::output2D( char* filename )
             rho = getDensity( consVars[cell] );
             u = getVelocity( consVars[cell] );
             A = getDistortion( consVars[cell] );
+            omega = 0.5 / dx * (consVars[cell + M][2] / consVars[cell + M][0] -
+                    consVars[cell - M][2] / consVars[cell - M][0] )
+                - 0.5 / dy * (consVars[cell + 1][2] / consVars[cell + 1][0] -
+                    consVars[cell - 1][2] / consVars[cell - 1][0] );
+
             curlyguy = getCurlTerm( consVars[cell], 
                 consVars[cell - nCellsY - 2 * nGhostCells], 
                 consVars[cell + nCellsY + 2 * nGhostCells], 
@@ -747,7 +753,7 @@ void HyperbolicPeshkovRomenski::output2D( char* filename )
                 << A(0, 0) << "\t" << A(0, 1) << "\t" << A(0, 2) << "\t"
                 << A(1, 0) << "\t" << A(1, 1) << "\t" << A(1, 2) << "\t"
                 << A(2, 0) << "\t" << A(2, 1) << "\t" << A(2, 2) << "\t"
-                << curlyguy.norm() << std::endl;
+                << omega << "\t" << curlyguy.norm() << std::endl;
         }
         fs << std::endl; 
     }
