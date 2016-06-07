@@ -65,10 +65,7 @@ int main( int argc, char* argv[] )
         if( t + dt > tStop )
             dt = tStop - t;
 
-        if( !strcmp( sim, "DoubleShearLayer") )
-            state.periodicBoundaryConditions();
-        else
-            state.boundaryConditions( BCs );
+        state.boundaryConditions( BCs );
 
         state.integrateODE( 0.5 * dt );
         state.xSweep( 0.5 * dt );

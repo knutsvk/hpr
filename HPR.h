@@ -102,7 +102,6 @@ class HyperbolicPeshkovRomenski
         void initializeDoubleShearLayer();
                 
         void boundaryConditions( BoundaryCondition type[4] );
-        void periodicBoundaryConditions();
         void xSweep( double dt );
         void ySweep( double dt );
         void renormalizeDistortion();

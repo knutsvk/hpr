@@ -474,9 +474,7 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     }
                     break;
                 case periodic: 
-                    copyFrom = nGhostCells * M + j;
-                    if( consVars[nCellsTot - ( 1 + nGhostCells ) * M + j][1] > 0.0 )
-                        copyFrom = nCellsTot - ( 1 + nGhostCells ) * M + j;
+                    copyFrom = cell + nCellsX * M;
                     consVars[copyTo] = consVars[copyFrom];
                     break;
                 case constant:
@@ -484,7 +482,7 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
             }
 
             // Right boundary (x = xMax)
-            copyTo = nCellsTot - 1 - cell; 
+            copyTo = cell + ( nCellsX + nGhostCells ) * M;
 
             switch (type[1] )
             {
@@ -501,9 +499,7 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     }
                     break;
                 case periodic: 
-                    copyFrom = nCellsTot - ( 1 + nGhostCells ) * M + j;
-                    if( consVars[nGhostCells * M + j][1] < 0.0 )
-                        copyFrom = nGhostCells * M + j;
+                    copyFrom = cell + nGhostCells * M;
                     consVars[copyTo] = consVars[copyFrom];
                     break;
                 case constant:
@@ -536,9 +532,7 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     }
                     break;
                 case periodic: 
-                    copyFrom = i * M + nGhostCells; 
-                    if( consVars[( i + 1 ) * M - ( 1 + nGhostCells )][2] > 0.0 )
-                        copyFrom = ( i + 1 ) * M - ( 1 + nGhostCells); 
+                    copyFrom = cell + nCellsY; 
                     consVars[copyTo] = consVars[copyFrom];
                     break;
                 case constant:
@@ -546,7 +540,7 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
             }
 
             // Top boundary (y = yMax)
-            copyTo = cell + M - 1 - 2 * j;
+            copyTo = cell + nCellsY + nGhostCells;
 
             switch( type[3] )
             {
@@ -564,9 +558,7 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     consVars[copyTo][1] += 2.0;
                     break;
                 case periodic: 
-                    copyFrom = ( i + 1 ) * M - ( 1 + nGhostCells );
-                    if( consVars[i * M + nGhostCells][2] < 0.0 )
-                        copyFrom = i * M + nGhostCells; 
+                    copyFrom = cell + nGhostCells; 
                     consVars[copyTo] = consVars[copyFrom];
                     break;
                 case constant:
@@ -575,34 +567,6 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
         }
     }
 }
-
-void HyperbolicPeshkovRomenski::periodicBoundaryConditions()
-{
-    int M = nCellsY + 2 * nGhostCells; 
-
-    // Bottom and top boundaries
-    for( int i = nGhostCells; i < nGhostCells + nCellsX; i++ )
-    {
-        // Bottom
-        consVars[i * M] = consVars[i * M + nCellsY];
-        consVars[i * M + 1] = consVars[i * M + 1 + nCellsY];
-        // Top
-        consVars[i * M + nCellsY + nGhostCells] = consVars[i * M + nGhostCells];
-        consVars[i * M + nCellsY + nGhostCells + 1] = consVars[i * M + nGhostCells + 1];
-    }
-
-    // Left and right boundaries
-    for( int j = nGhostCells; j < nGhostCells + nCellsY; j++ )
-    {
-        // Left
-        consVars[j] = consVars[j + nCellsX * M]; 
-        consVars[j + M] = consVars[j + ( nCellsX + 1 ) * M];
-        // Right
-        consVars[j + ( nCellsX + nGhostCells ) * M] = consVars[j + nGhostCells * M];
-        consVars[j + ( nCellsX + nGhostCells + 1 ) * M] = consVars[j + ( nGhostCells + 1 ) * M];
-    }
-}
-
 
 void HyperbolicPeshkovRomenski::xSweep( double dt )
 {
@@ -738,9 +702,9 @@ void HyperbolicPeshkovRomenski::output2D( char* filename )
             rho = getDensity( consVars[cell] );
             u = getVelocity( consVars[cell] );
             A = getDistortion( consVars[cell] );
-            omega = 0.5 / dx * (consVars[cell + M][2] / consVars[cell + M][0] -
+            omega = 0.5 / dx * ( consVars[cell + M][2] / consVars[cell + M][0] -
                     consVars[cell - M][2] / consVars[cell - M][0] )
-                - 0.5 / dy * (consVars[cell + 1][1] / consVars[cell + 1][0] -
+                - 0.5 / dy * ( consVars[cell + 1][1] / consVars[cell + 1][0] -
                     consVars[cell - 1][1] / consVars[cell - 1][0] );
 
             curlyguy = getCurlTerm( consVars[cell], 
