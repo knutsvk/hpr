@@ -24,6 +24,7 @@
  *  - laminar boundary layer
  *  - lid driven cavity
  * rethink naming of classes 
+ * remove rubbish
  * comment code
  * add non-newtonian
  */
@@ -80,11 +81,6 @@ class HyperbolicPeshkovRomenski
         double getDensity( const SimpleArray< double, 14 >& Q );
         SimpleArray< double, 3 > getVelocity( const SimpleArray< double, 14 >& Q );
         Eigen::Matrix3d getDistortion( const SimpleArray< double, 14 >& Q );
-        Eigen::Matrix3d getCurlTerm( const SimpleArray< double, 14 >& Q_0, 
-                const SimpleArray< double, 14 >& Q_L, 
-                const SimpleArray< double, 14 >& Q_R,
-                const SimpleArray< double, 14 >& Q_B, 
-                const SimpleArray< double, 14 >& Q_T );
         double getEnergy( const SimpleArray< double, 14 >& Q );
 
         virtual double getPressure( const SimpleArray< double, 14 >& Q ) = 0;
@@ -99,11 +95,8 @@ class HyperbolicPeshkovRomenski
         void initialize( double initDiscontPos, Direction initDiscontDir,
                 double density[2], SimpleArray< double, 3 > velocity[2],
                 Eigen::Matrix3d distortion[2], double pressure[2] ); 
-        void initializeDoubleShearLayer();
                 
         void boundaryConditions( BoundaryCondition type[4] );
-        void printDomain();
-        void periodicBoundaryConditions();
         void xSweep( double dt );
         void ySweep( double dt );
         void renormalizeDistortion();
@@ -112,6 +105,16 @@ class HyperbolicPeshkovRomenski
         void output1DSliceY( char* filename );
 
         bool isPhysical();
+
+        // Functions taht will probably be deleted/replaced at some point: 
+        Eigen::Matrix3d getCurlTerm( const SimpleArray< double, 14 >& Q_0, 
+                const SimpleArray< double, 14 >& Q_L, 
+                const SimpleArray< double, 14 >& Q_R,
+                const SimpleArray< double, 14 >& Q_B, 
+                const SimpleArray< double, 14 >& Q_T );
+        void printDomain();
+        void periodicBoundaryConditions();
+        void initializeDoubleShearLayer();
 };
 
 // Fluid class, inherits HPR
