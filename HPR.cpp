@@ -570,6 +570,111 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
     }
 }
 
+void HyperbolicPeshkovRomenski::printDomain()
+{
+    int M = nCellsY + 2 * nGhostCells; 
+    int cell, copyTo, copyFrom; 
+    std::vector< int > id;
+    id.resize( nCellsTot );
+
+    std::cout << "Reference: " << std::endl;
+    for( int i = 0; i < nCellsX + 2 * nGhostCells; i++ )
+    {
+        for( int j = 0; j < nCellsY + 2 * nGhostCells; j++ )
+        {
+            if( i < nGhostCells ) 
+            {
+                if( j < nGhostCells )
+                    std::cout << "* "; 
+                else if ( j >= nGhostCells + nCellsY )
+                    std::cout << "* ";
+                else
+                    std::cout << "L "; 
+            }
+            else if( i >= nGhostCells + nCellsX )
+            {
+                if( j < nGhostCells )
+                    std::cout << "* "; 
+                else if ( j >= nGhostCells + nCellsY )
+                    std::cout << "* ";
+                else
+                    std::cout << "R "; 
+            }
+            else
+            {
+                if( j < nGhostCells )
+                    std::cout << "B "; 
+                else if( j >= nGhostCells + nCellsY )
+                    std::cout << "T "; 
+                else
+                    std::cout << ". ";
+            }
+        }
+        std::cout << std::endl; 
+    }
+
+    std::cout << std::endl << std::endl; 
+    std::cout << "Original configuration: " << std::endl; 
+    for( int i = 0; i < nCellsX + 2 * nGhostCells; i++ )
+    {
+        for( int j = 0; j < nCellsY + 2 * nGhostCells; j++ )
+        {
+            cell = i * M + j;
+            id[cell] = cell;
+            std::cout << id[cell] << "\t"; 
+        }
+        std::cout << std::endl; 
+    }
+
+    for( int i = 0; i < nGhostCells; i++ )
+    {
+        for( int j = nGhostCells; j < nGhostCells + nCellsY; j++ )
+        {
+            cell = i * M + j;
+            
+            // Left boundary (x = xMin)
+            copyTo = cell; 
+            copyFrom = cell + nCellsX * M;
+            id[copyTo] = id[copyFrom];
+
+            // Right boundary (x = xMax)
+            copyTo = cell + ( nCellsX + nGhostCells ) * M;
+            copyFrom = cell + nGhostCells * M;
+            id[copyTo] = id[copyFrom];
+        }
+    }
+
+    for( int i = nGhostCells; i < nGhostCells + nCellsX ; i++ )
+    {
+        for( int j = 0; j < nGhostCells; j++ )
+        {
+            cell = i * M + j;
+
+            // Bottom boundary (y = yMin)
+            copyTo = cell; 
+            copyFrom = cell + nCellsY; 
+            id[copyTo] = id[copyFrom];
+
+            // Top boundary (y = yMax)
+            copyTo = cell + nCellsY + nGhostCells;
+            copyFrom = cell + nGhostCells; 
+            id[copyTo] = id[copyFrom];
+        }
+    }
+
+    std::cout << std::endl << std::endl; 
+    std::cout << "Modified configuration: " << std::endl; 
+    for( int i = 0; i < nCellsX + 2 * nGhostCells; i++ )
+    {
+        for( int j = 0; j < nCellsY + 2 * nGhostCells; j++ )
+        {
+            cell = i * M + j;
+            std::cout << id[cell] << "\t"; 
+        }
+        std::cout << std::endl; 
+    }
+}
+
 void HyperbolicPeshkovRomenski::periodicBoundaryConditions()
 {
     int M = nCellsY + 2 * nGhostCells; 
