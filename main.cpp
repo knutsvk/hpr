@@ -42,10 +42,6 @@ int main( int argc, char* argv[] )
     // Allocate memory, set material properties
     HPR_Fluid state( C_s, rho0, Nx, Ny, dom, g, t_PSL );
 
-    // Print domain to check BCs
-    state.printDomain();
-    return 0;
-
     // Apply initial conditions
     if( !strcmp( sim, "DoubleShearLayer") )
         state.initializeDoubleShearLayer();
@@ -77,11 +73,14 @@ int main( int argc, char* argv[] )
             dt = tStop - t;
 
         state.boundaryConditions( BCs );
-
         state.integrateODE( 0.5 * dt );
+        state.boundaryConditions( BCs );
         state.xSweep( 0.5 * dt );
+        state.boundaryConditions( BCs );
         state.ySweep( dt );
+        state.boundaryConditions( BCs );
         state.xSweep( 0.5 * dt );
+        state.boundaryConditions( BCs );
         state.integrateODE( 0.5 * dt );
 
         t += dt;
