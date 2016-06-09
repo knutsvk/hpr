@@ -63,7 +63,7 @@ int main( int argc, char* argv[] )
             sprintf( outfile, "%s_2D_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
             state.output2D( outfile );
             cout << "\r" << l << "%..." << flush; 
-            l += 1.0;
+            l += 10.0;
         }
 
         dt = state.getTimeStep( c );
@@ -75,18 +75,18 @@ int main( int argc, char* argv[] )
         state.boundaryConditions( BCs );
         state.integrateODE( 0.5 * dt );
         state.boundaryConditions( BCs );
-        state.xSweep( 0.5 * dt );
+        state.ySweep( 0.5 * dt );
         state.boundaryConditions( BCs );
-        state.ySweep( dt );
+        state.xSweep( dt );
         state.boundaryConditions( BCs );
-        state.xSweep( 0.5 * dt );
+        state.ySweep( 0.5 * dt );
         state.boundaryConditions( BCs );
         state.integrateODE( 0.5 * dt );
 
         t += dt;
         iter++;
     }
-    cout << "Done!" << endl; 
+    cout << flush << "Done!" << endl; 
 
     // Write results to file
     sprintf( outfile, "%s_1DSliceX_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
