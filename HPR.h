@@ -110,6 +110,8 @@ class HyperbolicPeshkovRomenski
         void output2D( char* filename );
         void output1DSliceX( char* filename );
         void output1DSliceY( char* filename );
+
+        bool isPhysical();
 };
 
 // Fluid class, inherits HPR

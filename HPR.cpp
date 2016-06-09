@@ -924,6 +924,85 @@ void HyperbolicPeshkovRomenski::output1DSliceY( char* filename )
     fs.close();
 }
 
+bool HyperbolicPeshkovRomenski::isPhysical()
+{
+    int M = nCellsY + 2 * nGhostCells; 
+    double x, y, rho, E, p;
+    SimpleArray< double, 3 > u;
+    Eigen::Matrix3d A; 
+    for( int i = 0; i < nCellsX + 2 * nGhostCells; i++ )
+    {
+        for( int j = 0; j < nCellsY + 2 * nGhostCells; j++ )
+        {
+            x = domain[0] + ( i - nGhostCells + 0.5 ) * dx;
+            y = domain[2] + ( j - nGhostCells + 0.5 ) * dy; 
+
+            rho = getDensity( consVars[i * M + j] );
+            if( std::isnan( rho ) )
+            {
+                std::cout << "Problem: rho = nan at x = " << x << ", y = " << y
+                    << ". " << std::endl; 
+                return false; 
+            }
+            else if( rho < 0.0 )
+            {
+                std::cout << "Problem: rho < 0.0 at x = " << x << ", y = " << y
+                    << ". " << std::endl; 
+                return false; 
+            }
+
+            u = getVelocity( consVars[i * M + j] );
+            for( int k = 0; k < 3; k++ )
+            {
+                if( std::isnan( u[k] ) )
+                {
+                    std::cout << "Problem: u[" << k << "] = nan at x = " << x
+                        << ", y = " << y << ". " << std::endl; 
+                    return false; 
+                }
+            }
+
+            A = getDistortion( consVars[i * M + j] );
+            for( int k = 0; k < 3; k++ )
+            {
+                for( int l = 0; l < 3; l++ )
+                {
+                    if( std::isnan( A(k, l) ) )
+                    {
+                        std::cout << "Problem: A(" << k << ", " << l 
+                            << ") = nan at x = " << x << ", y = " << y << ". "
+                            << std::endl; 
+                        return false; 
+                    }
+                }
+            }
+
+            E = getEnergy( consVars[i * M + j] );
+            if( std::isnan( E ) )
+            {
+                std::cout << "Problem: E = nan at x = " << x << ", y = " << y
+                    << ". " << std::endl; 
+                return false; 
+            }
+
+            p = getPressure( consVars[i * M + j] );
+            if( std::isnan( p ) )
+            {
+                std::cout << "Problem: p = nan at x = " << x << ", y = " << y
+                    << ". " << std::endl; 
+                return false; 
+            }
+            else if( p < 0.0 )
+            {
+                std::cout << "Problem: p < 0.0 at x = " << x << ", y = " << y
+                    << ". " << std::endl; 
+                return false; 
+            }
+        }
+    }
+    return true;
+}
+
 /* CLASS HPR_FLUID */
 
 HPR_Fluid::HPR_Fluid( double _shearSoundSpeed, double _referenceDensity, 

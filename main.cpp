@@ -83,6 +83,13 @@ int main( int argc, char* argv[] )
         state.boundaryConditions( BCs );
         state.integrateODE( 0.5 * dt );
 
+        if( !state.isPhysical() )
+        {
+            cout << "Unphysical state encountered in iteration " << iter 
+                << ", time = " << t << ". " << endl;
+            return 1;
+        }
+
         t += dt;
         iter++;
     }
