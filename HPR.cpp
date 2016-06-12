@@ -309,7 +309,7 @@ Eigen::Matrix3d HyperbolicPeshkovRomenski::getShearStress(
     Eigen::Matrix3d A = getDistortion( Q );
     Eigen::Matrix3d G = A.transpose() * A;
     Eigen::Matrix3d devG = G - G.trace() * Eigen::Matrix3d::Identity() / 3.0;
-    assert( fabs( devG.trace() ) < 1.0e-3);
+//    assert( fabs( devG.trace() ) < 1.0e-3);
     return - rho * c_s * c_s * G * devG;
 }
 
@@ -944,12 +944,12 @@ bool HyperbolicPeshkovRomenski::isPhysical()
                     << ". " << std::endl; 
                 return false; 
             }
-            else if( rho < 0.0 )
+/*            else if( rho < 0.0 )
             {
                 std::cout << "Problem: rho < 0.0 at x = " << x << ", y = " << y
                     << ". " << std::endl; 
                 return false; 
-            }
+            }*/
 
             u = getVelocity( consVars[i * M + j] );
             for( int k = 0; k < 3; k++ )
@@ -989,12 +989,6 @@ bool HyperbolicPeshkovRomenski::isPhysical()
             if( std::isnan( p ) )
             {
                 std::cout << "Problem: p = nan at x = " << x << ", y = " << y
-                    << ". " << std::endl; 
-                return false; 
-            }
-            else if( p < 0.0 )
-            {
-                std::cout << "Problem: p < 0.0 at x = " << x << ", y = " << y
                     << ". " << std::endl; 
                 return false; 
             }
