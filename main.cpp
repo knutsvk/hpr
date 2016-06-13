@@ -73,15 +73,19 @@ int main( int argc, char* argv[] )
             dt = tStop - t;
 
         state.boundaryConditions( BCs );
-        state.integrateODE( 0.5 * dt );
-        state.boundaryConditions( BCs );
         state.ySweep( 0.5 * dt );
+
+        state.boundaryConditions( BCs );
+        state.integrateODE( 0.5 * dt );
+
         state.boundaryConditions( BCs );
         state.xSweep( dt );
-        state.boundaryConditions( BCs );
-        state.ySweep( 0.5 * dt );
+
         state.boundaryConditions( BCs );
         state.integrateODE( 0.5 * dt );
+
+        state.boundaryConditions( BCs );
+        state.ySweep( 0.5 * dt );
 
         if( !state.isPhysical() )
         {
