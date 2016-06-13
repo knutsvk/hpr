@@ -466,12 +466,13 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     consVars[copyTo] = consVars[copyFrom];
                     break;
                 case reflective:
-/*                    copyFrom = copyTo + ( 2 * ( nGhostCells - i ) - 1 ) * M;
+                    copyTo = cell; 
+                    copyFrom = copyTo + ( 2 * ( nGhostCells - i ) - 1 ) * M;
                     consVars[copyTo] = consVars[copyFrom];
                     for( int k = 1; k < 4; k++ )
                     {
                         consVars[copyTo][k] *= - 1.0;
-                    }*/
+                    }
                     break;
                 case periodic: 
                     copyTo = cell; 
@@ -491,12 +492,13 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     consVars[copyTo] = consVars[copyFrom];
                     break;
                 case reflective:
-/*                    copyFrom = copyTo - ( 2 * ( nGhostCells - i ) - 1 ) * M;
+                    copyTo = nCellsTot - ( 1 + cell ); 
+                    copyFrom = copyTo - ( 2 * ( nGhostCells - i ) - 1 ) * M;
                     consVars[copyTo] = consVars[copyFrom];
                     for( int k = 1; k < 4; k++ )
                     {
                         consVars[copyTo][k] *= - 1.0;
-                    }*/
+                    }
                     break;
                 case periodic: 
                     copyTo = cell + ( nCellsX + nGhostCells ) * M;
@@ -524,12 +526,13 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     consVars[copyTo] = consVars[copyFrom];
                     break;
                 case reflective:
-/*                    copyFrom = copyTo + ( 2 * ( nGhostCells - j ) - 1 );
+                    copyTo = cell; 
+                    copyFrom = copyTo + ( 2 * ( nGhostCells - j ) - 1 );
                     consVars[copyTo] = consVars[copyFrom];
                     for( int k = 1; k < 4; k++ )
                     {
                         consVars[copyTo][k] *= - 1.0;
-                    }*/
+                    }
                     break;
                 case periodic: 
                     copyTo = cell; 
@@ -550,13 +553,14 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     consVars[copyTo] = consVars[copyFrom];
                     break;
                 case reflective:
-/*                    copyFrom = copyTo - ( 2 * ( nGhostCells - j ) - 1 );
+                    copyTo = ( i + 1 ) * M - (1 + j );
+                    copyFrom = copyTo - ( 2 * ( nGhostCells - j ) - 1 );
                     consVars[copyTo] = consVars[copyFrom];
                     for( int k = 1; k < 4; k++ )
                     {
                         consVars[copyTo][k] *= - 1.0;
                     }
-                    consVars[copyTo][1] += 2.0;*/
+                    consVars[copyTo][1] += 2.0;
                     break;
                 case periodic: 
                     copyTo = cell + nCellsY + nGhostCells;
