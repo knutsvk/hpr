@@ -63,7 +63,7 @@ int main( int argc, char* argv[] )
             sprintf( outfile, "%s_2D_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
             state.output2D( outfile );
             cout << "\r" << l << "%..." << flush; 
-            l += 10.0;
+            l += 1.0;
         }
 
         dt = state.getTimeStep( c );
