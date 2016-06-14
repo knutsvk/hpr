@@ -940,23 +940,23 @@ bool HyperbolicPeshkovRomenski::isPhysical()
             rho = getDensity( consVars[i * M + j] );
             if( std::isnan( rho ) )
             {
-                std::cout << "Problem: rho = nan at x = " << x << ", y = " << y
+                std::cout << "Error: rho = nan at x = " << x << ", y = " << y
                     << ". " << std::endl; 
                 return false; 
             }
-/*            else if( rho < 0.0 )
+            else if( rho < 0.0 )
             {
-                std::cout << "Problem: rho < 0.0 at x = " << x << ", y = " << y
+                std::cout << "Error: rho < 0.0 at x = " << x << ", y = " << y
                     << ". " << std::endl; 
                 return false; 
-            }*/
+            }
 
             u = getVelocity( consVars[i * M + j] );
             for( int k = 0; k < 3; k++ )
             {
                 if( std::isnan( u[k] ) )
                 {
-                    std::cout << "Problem: u[" << k << "] = nan at x = " << x
+                    std::cout << "Error: u[" << k << "] = nan at x = " << x
                         << ", y = " << y << ". " << std::endl; 
                     return false; 
                 }
@@ -969,7 +969,7 @@ bool HyperbolicPeshkovRomenski::isPhysical()
                 {
                     if( std::isnan( A(k, l) ) )
                     {
-                        std::cout << "Problem: A(" << k << ", " << l 
+                        std::cout << "Error: A(" << k << ", " << l 
                             << ") = nan at x = " << x << ", y = " << y << ". "
                             << std::endl; 
                         return false; 
@@ -980,7 +980,7 @@ bool HyperbolicPeshkovRomenski::isPhysical()
             E = getEnergy( consVars[i * M + j] );
             if( std::isnan( E ) )
             {
-                std::cout << "Problem: E = nan at x = " << x << ", y = " << y
+                std::cout << "Error: E = nan at x = " << x << ", y = " << y
                     << ". " << std::endl; 
                 return false; 
             }
@@ -988,7 +988,7 @@ bool HyperbolicPeshkovRomenski::isPhysical()
             p = getPressure( consVars[i * M + j] );
             if( std::isnan( p ) )
             {
-                std::cout << "Problem: p = nan at x = " << x << ", y = " << y
+                std::cout << "Error: p = nan at x = " << x << ", y = " << y
                     << ". " << std::endl; 
                 return false; 
             }
