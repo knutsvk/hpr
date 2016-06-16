@@ -309,7 +309,7 @@ Eigen::Matrix3d HyperbolicPeshkovRomenski::getShearStress(
     Eigen::Matrix3d A = getDistortion( Q );
     Eigen::Matrix3d G = A.transpose() * A;
     Eigen::Matrix3d devG = G - G.trace() * Eigen::Matrix3d::Identity() / 3.0;
-    assert( fabs( devG.trace() ) < 1.0e-3);
+//    assert( fabs( devG.trace() ) < 1.0e-3);
     return - rho * c_s * c_s * G * devG;
 }
 
@@ -570,6 +570,111 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
     }
 }
 
+void HyperbolicPeshkovRomenski::printDomain()
+{
+    int M = nCellsY + 2 * nGhostCells; 
+    int cell, copyTo, copyFrom; 
+    std::vector< int > id;
+    id.resize( nCellsTot );
+
+    std::cout << "Reference: " << std::endl;
+    for( int i = 0; i < nCellsX + 2 * nGhostCells; i++ )
+    {
+        for( int j = 0; j < nCellsY + 2 * nGhostCells; j++ )
+        {
+            if( i < nGhostCells ) 
+            {
+                if( j < nGhostCells )
+                    std::cout << "* "; 
+                else if ( j >= nGhostCells + nCellsY )
+                    std::cout << "* ";
+                else
+                    std::cout << "L "; 
+            }
+            else if( i >= nGhostCells + nCellsX )
+            {
+                if( j < nGhostCells )
+                    std::cout << "* "; 
+                else if ( j >= nGhostCells + nCellsY )
+                    std::cout << "* ";
+                else
+                    std::cout << "R "; 
+            }
+            else
+            {
+                if( j < nGhostCells )
+                    std::cout << "B "; 
+                else if( j >= nGhostCells + nCellsY )
+                    std::cout << "T "; 
+                else
+                    std::cout << ". ";
+            }
+        }
+        std::cout << std::endl; 
+    }
+
+    std::cout << std::endl << std::endl; 
+    std::cout << "Original configuration: " << std::endl; 
+    for( int i = 0; i < nCellsX + 2 * nGhostCells; i++ )
+    {
+        for( int j = 0; j < nCellsY + 2 * nGhostCells; j++ )
+        {
+            cell = i * M + j;
+            id[cell] = cell;
+            std::cout << id[cell] << "\t"; 
+        }
+        std::cout << std::endl; 
+    }
+
+    for( int i = 0; i < nGhostCells; i++ )
+    {
+        for( int j = nGhostCells; j < nGhostCells + nCellsY; j++ )
+        {
+            cell = i * M + j;
+            
+            // Left boundary (x = xMin)
+            copyTo = cell; 
+            copyFrom = cell + nCellsX * M;
+            id[copyTo] = id[copyFrom];
+
+            // Right boundary (x = xMax)
+            copyTo = cell + ( nCellsX + nGhostCells ) * M;
+            copyFrom = cell + nGhostCells * M;
+            id[copyTo] = id[copyFrom];
+        }
+    }
+
+    for( int i = nGhostCells; i < nGhostCells + nCellsX ; i++ )
+    {
+        for( int j = 0; j < nGhostCells; j++ )
+        {
+            cell = i * M + j;
+
+            // Bottom boundary (y = yMin)
+            copyTo = cell; 
+            copyFrom = cell + nCellsY; 
+            id[copyTo] = id[copyFrom];
+
+            // Top boundary (y = yMax)
+            copyTo = cell + nCellsY + nGhostCells;
+            copyFrom = cell + nGhostCells; 
+            id[copyTo] = id[copyFrom];
+        }
+    }
+
+    std::cout << std::endl << std::endl; 
+    std::cout << "Modified configuration: " << std::endl; 
+    for( int i = 0; i < nCellsX + 2 * nGhostCells; i++ )
+    {
+        for( int j = 0; j < nCellsY + 2 * nGhostCells; j++ )
+        {
+            cell = i * M + j;
+            std::cout << id[cell] << "\t"; 
+        }
+        std::cout << std::endl; 
+    }
+}
+
 void HyperbolicPeshkovRomenski::periodicBoundaryConditions()
 {
     int M = nCellsY + 2 * nGhostCells; 
@@ -817,6 +922,79 @@ void HyperbolicPeshkovRomenski::output1DSliceY( char* filename )
             << p << "\t" << e << "\t" << uAbs << std::endl;
     }
     fs.close();
+}
+
+bool HyperbolicPeshkovRomenski::isPhysical()
+{
+    int M = nCellsY + 2 * nGhostCells; 
+    double x, y, rho, E, p;
+    SimpleArray< double, 3 > u;
+    Eigen::Matrix3d A; 
+    for( int i = 0; i < nCellsX + 2 * nGhostCells; i++ )
+    {
+        for( int j = 0; j < nCellsY + 2 * nGhostCells; j++ )
+        {
+            x = domain[0] + ( i - nGhostCells + 0.5 ) * dx;
+            y = domain[2] + ( j - nGhostCells + 0.5 ) * dy; 
+
+            rho = getDensity( consVars[i * M + j] );
+            if( std::isnan( rho ) )
+            {
+                std::cout << "Problem: rho = nan at x = " << x << ", y = " << y
+                    << ". " << std::endl; 
+                return false; 
+            }
+/*            else if( rho < 0.0 )
+            {
+                std::cout << "Problem: rho < 0.0 at x = " << x << ", y = " << y
+                    << ". " << std::endl; 
+                return false; 
+            }*/
+
+            u = getVelocity( consVars[i * M + j] );
+            for( int k = 0; k < 3; k++ )
+            {
+                if( std::isnan( u[k] ) )
+                {
+                    std::cout << "Problem: u[" << k << "] = nan at x = " << x
+                        << ", y = " << y << ". " << std::endl; 
+                    return false; 
+                }
+            }
+
+            A = getDistortion( consVars[i * M + j] );
+            for( int k = 0; k < 3; k++ )
+            {
+                for( int l = 0; l < 3; l++ )
+                {
+                    if( std::isnan( A(k, l) ) )
+                    {
+                        std::cout << "Problem: A(" << k << ", " << l 
+                            << ") = nan at x = " << x << ", y = " << y << ". "
+                            << std::endl; 
+                        return false; 
+                    }
+                }
+            }
+
+            E = getEnergy( consVars[i * M + j] );
+            if( std::isnan( E ) )
+            {
+                std::cout << "Problem: E = nan at x = " << x << ", y = " << y
+                    << ". " << std::endl; 
+                return false; 
+            }
+
+            p = getPressure( consVars[i * M + j] );
+            if( std::isnan( p ) )
+            {
+                std::cout << "Problem: p = nan at x = " << x << ", y = " << y
+                    << ". " << std::endl; 
+                return false; 
+            }
+        }
+    }
+    return true;
 }
 
 /* CLASS HPR_FLUID */

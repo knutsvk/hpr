@@ -73,17 +73,27 @@ int main( int argc, char* argv[] )
             dt = tStop - t;
 
         state.boundaryConditions( BCs );
+        state.integrateODE( 0.5 * dt );
+        state.boundaryConditions( BCs );
+        state.ySweep( 0.5 * dt );
+        state.boundaryConditions( BCs );
+        state.xSweep( dt );
+        state.boundaryConditions( BCs );
+        state.ySweep( 0.5 * dt );
+        state.boundaryConditions( BCs );
+        state.integrateODE( 0.5 * dt );
 
-        state.integrateODE( 0.5 * dt );
-        state.xSweep( 0.5 * dt );
-        state.ySweep( dt );
-        state.xSweep( 0.5 * dt );
-        state.integrateODE( 0.5 * dt );
+        if( !state.isPhysical() )
+        {
+            cout << "Unphysical state encountered in iteration " << iter 
+                << ", time = " << t << ". " << endl;
+            return 1;
+        }
 
         t += dt;
         iter++;
     }
-    cout << "Done!" << endl; 
+    cout << flush << "Done!" << endl; 
 
     // Write results to file
     sprintf( outfile, "%s_1DSliceX_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
