@@ -568,6 +568,12 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
             }
         }
     }
+    
+    if( !isPhysical() )
+    {
+        std::cout << "Unphysical state encountered in function " 
+            << "boundaryConditions() " << std::endl; 
+    }
 }
 
 void HyperbolicPeshkovRomenski::printDomain()
@@ -713,35 +719,41 @@ void HyperbolicPeshkovRomenski::xSweep( double dt )
     } 
     
     int cell; 
-    SimpleArray< double, 14 > F_L, F_R, M; 
+    int M = nCellsY + 2 * nGhostCells; 
+    SimpleArray< double, 14 > F_L, F_R, N; 
 
-#pragma omp parallel for private( cell, F_L, F_R, M )
+#pragma omp parallel for private( cell, F_L, F_R, N )
     for( int i = nGhostCells; i < nGhostCells + nCellsX; i++ )
     {
         for( int j = nGhostCells; j < nGhostCells + nCellsY; j++ )
         {
-            cell = i * ( nCellsY + 2 * nGhostCells ) + j; 
+            cell = i * M + j; 
             slicFlux( dt, dx, 0, 
-                    tempVars[cell - 2 * ( nCellsY + 2 * nGhostCells )],
-                    tempVars[cell - ( nCellsY + 2 * nGhostCells )],
+                    tempVars[cell - 2 * M],
+                    tempVars[cell - M],
                     tempVars[cell], 
-                    tempVars[cell + ( nCellsY + 2 * nGhostCells )], 
+                    tempVars[cell + M], 
                     F_L );
             slicFlux( dt, dx, 0,
-                    tempVars[cell - ( nCellsY + 2 * nGhostCells )],
+                    tempVars[cell - M],
                     tempVars[cell], 
-                    tempVars[cell + ( nCellsY + 2 * nGhostCells )], 
-                    tempVars[cell + 2 * ( nCellsY + 2 * nGhostCells )], 
+                    tempVars[cell + M], 
+                    tempVars[cell + 2 * M], 
                     F_R );
             nonconservativeTerms( 0, 
-                    tempVars[cell - ( nCellsY + 2 * nGhostCells )], 
+                    tempVars[cell - M], 
                     tempVars[cell], 
-                    tempVars[cell + ( nCellsY + 2 * nGhostCells )], 
-                    M );
-            consVars[cell] = tempVars[cell] + dt / dx * ( F_L - F_R + M ); 
+                    tempVars[cell + M], 
+                    N );
+            consVars[cell] = tempVars[cell] + dt / dx * ( F_L - F_R + N ); 
         }
     } 
-    renormalizeDistortion();
+    
+    if( !isPhysical() )
+    {
+        std::cout << "Unphysical state encountered in function " 
+            << "xSweep() " << std::endl; 
+    }
 }
 
 void HyperbolicPeshkovRomenski::ySweep( double dt )
@@ -781,7 +793,12 @@ void HyperbolicPeshkovRomenski::ySweep( double dt )
             consVars[cell] = tempVars[cell] + dt / dy * ( F_B - F_T + N); 
         }
     } 
-    renormalizeDistortion();
+    
+    if( !isPhysical() )
+    {
+        std::cout << "Unphysical state encountered in function " 
+            << "ySweep() " << std::endl; 
+    }
 }
 
 void HyperbolicPeshkovRomenski::renormalizeDistortion()
@@ -794,8 +811,8 @@ void HyperbolicPeshkovRomenski::renormalizeDistortion()
     {
         rho = getDensity( consVars[i] );
         A = getDistortion( consVars[i] );
-        scaleFactor = pow( rho / ( rho_0 * A.determinant() ), 1.0 / 3.0 );
-        A *= scaleFactor;
+        scaleFactor = 1 + ( cbrt( rho_0 / rho * A.determinant() ) - 1 ) / 6.0;
+        A /= scaleFactor;
         for( int j = 0; j < 3; j++ )
         {
             for( int k = 0; k < 3; k++ )
@@ -803,6 +820,12 @@ void HyperbolicPeshkovRomenski::renormalizeDistortion()
                 consVars[i][4 + 3 * j + k] = A(j, k);
             }
         }
+    }
+    
+    if( !isPhysical() )
+    {
+        std::cout << "Unphysical state encountered in function " 
+            << "renormalizeDistortion() " << std::endl; 
     }
 }
 
@@ -825,7 +848,8 @@ void HyperbolicPeshkovRomenski::output2D( char* filename )
         << "A11" << "\t" << "A12" << "\t" << "A13" << "\t" 
         << "A21" << "\t" << "A22" << "\t" << "A23" << "\t" 
         << "A31" << "\t" << "A32" << "\t" << "A33" << "\t" 
-        << "omega" << "\t" << "curlynorm" << std::endl; 
+        << "omega" << "\t" << "curlynorm" << "\t" 
+        << "rho-rho0detA" << std::endl; 
 
     for( int i = nGhostCells; i < nGhostCells + nCellsX; i++ )
     {
@@ -853,7 +877,8 @@ void HyperbolicPeshkovRomenski::output2D( char* filename )
                 << A(0, 0) << "\t" << A(0, 1) << "\t" << A(0, 2) << "\t"
                 << A(1, 0) << "\t" << A(1, 1) << "\t" << A(1, 2) << "\t"
                 << A(2, 0) << "\t" << A(2, 1) << "\t" << A(2, 2) << "\t"
-                << omega << "\t" << curlyguy.norm() << std::endl;
+                << omega << "\t" << curlyguy.norm() << "\t" 
+                << rho - rho_0 * A.determinant() << std::endl;
         }
         fs << std::endl; 
     }
@@ -1068,7 +1093,12 @@ void HPR_Fluid::integrateODE( double dt )
                     1.0e-6 * dt );
         }
     }
-    renormalizeDistortion();
+    
+    if( !isPhysical() )
+    {
+        std::cout << "Unphysical state encountered in function " 
+            << "integrateODE() " << std::endl; 
+    }
 }
 
 /* CLASS HPR_SOLID */
@@ -1241,7 +1271,7 @@ void configurate( const char* inputFile, int& nCellsX, int& nCellsY,
 
     for( int i = 0; i < 2; i++ )
     {
-        initDistortion[i] = pow( initDensity[i] / rho_0, 1.0 / 3.0 ) *
+        initDistortion[i] = cbrt( initDensity[i] / rho_0 ) *
             Eigen::Matrix3d::Identity();
     }
 }
