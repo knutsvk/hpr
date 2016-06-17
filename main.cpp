@@ -63,7 +63,7 @@ int main( int argc, char* argv[] )
             sprintf( outfile, "%s_2D_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
             state.output2D( outfile );
             cout << "\r" << l << "%..." << flush; 
-            l += 1.0;
+            l += 10.0;
         }
 
         dt = state.getTimeStep( c );
@@ -73,16 +73,78 @@ int main( int argc, char* argv[] )
             dt = tStop - t;
 
         state.boundaryConditions( BCs );
-        state.integrateODE( 0.5 * dt );
-        state.boundaryConditions( BCs );
-        state.ySweep( 0.5 * dt );
-        state.boundaryConditions( BCs );
-        state.xSweep( dt );
-        state.boundaryConditions( BCs );
-        state.ySweep( 0.5 * dt );
-        state.boundaryConditions( BCs );
-        state.integrateODE( 0.5 * dt );
+        if( !state.isPhysical() )
+        {
+            cout << "Unphysical state encountered in iteration " << iter 
+                << ", time = " << t << ". " << endl;
+            return 1;
+        }
 
+        state.integrateODE( 0.5 * dt );
+        if( !state.isPhysical() )
+        {
+            cout << "Unphysical state encountered in iteration " << iter 
+                << ", time = " << t << ". " << endl;
+            return 1;
+        }
+
+        state.boundaryConditions( BCs );
+        if( !state.isPhysical() )
+        {
+            cout << "Unphysical state encountered in iteration " << iter 
+                << ", time = " << t << ". " << endl;
+            return 1;
+        }
+
+        state.ySweep( 0.5 * dt );
+        if( !state.isPhysical() )
+        {
+            cout << "Unphysical state encountered in iteration " << iter 
+                << ", time = " << t << ". " << endl;
+            return 1;
+        }
+
+        state.boundaryConditions( BCs );
+        if( !state.isPhysical() )
+        {
+            cout << "Unphysical state encountered in iteration " << iter 
+                << ", time = " << t << ". " << endl;
+            return 1;
+        }
+
+        state.xSweep( dt );
+        if( !state.isPhysical() )
+        {
+            cout << "Unphysical state encountered in iteration " << iter 
+                << ", time = " << t << ". " << endl;
+            return 1;
+        }
+
+        state.boundaryConditions( BCs );
+        if( !state.isPhysical() )
+        {
+            cout << "Unphysical state encountered in iteration " << iter 
+                << ", time = " << t << ". " << endl;
+            return 1;
+        }
+
+        state.ySweep( 0.5 * dt );
+        if( !state.isPhysical() )
+        {
+            cout << "Unphysical state encountered in iteration " << iter 
+                << ", time = " << t << ". " << endl;
+            return 1;
+        }
+
+        state.boundaryConditions( BCs );
+        if( !state.isPhysical() )
+        {
+            cout << "Unphysical state encountered in iteration " << iter 
+                << ", time = " << t << ". " << endl;
+            return 1;
+        }
+
+        state.integrateODE( 0.5 * dt );
         if( !state.isPhysical() )
         {
             cout << "Unphysical state encountered in iteration " << iter 
