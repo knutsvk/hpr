@@ -309,7 +309,7 @@ Eigen::Matrix3d HyperbolicPeshkovRomenski::getShearStress(
     Eigen::Matrix3d A = getDistortion( Q );
     Eigen::Matrix3d G = A.transpose() * A;
     Eigen::Matrix3d devG = G - G.trace() * Eigen::Matrix3d::Identity() / 3.0;
-    assert( fabs( devG.trace() ) < 1.0e-3);
+//    assert( fabs( devG.trace() ) < 1.0e-3);
     return - rho * c_s * c_s * G * devG;
 }
 
@@ -492,7 +492,7 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     consVars[copyTo] = consVars[copyFrom];
                     break;
                 case reflective:
-                    copyTo = nCellsTot - ( 1 + cell ); 
+                    copyTo = nCellsTot - ( 1 + cell );
                     copyFrom = copyTo - ( 2 * ( nGhostCells - i ) - 1 ) * M;
                     consVars[copyTo] = consVars[copyFrom];
                     for( int k = 1; k < 4; k++ )
@@ -553,7 +553,7 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     consVars[copyTo] = consVars[copyFrom];
                     break;
                 case reflective:
-                    copyTo = ( i + 1 ) * M - (1 + j );
+                    copyTo = ( i + 1 ) * M - ( 1 + j );
                     copyFrom = copyTo - ( 2 * ( nGhostCells - j ) - 1 );
                     consVars[copyTo] = consVars[copyFrom];
                     for( int k = 1; k < 4; k++ )
@@ -571,6 +571,12 @@ void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
                     break;
             }
         }
+    }
+    
+    if( !isPhysical() )
+    {
+        std::cout << "Unphysical state encountered in function " 
+            << "boundaryConditions() " << std::endl; 
     }
 }
 
@@ -717,35 +723,41 @@ void HyperbolicPeshkovRomenski::xSweep( double dt )
     } 
     
     int cell; 
-    SimpleArray< double, 14 > F_L, F_R, M; 
+    int M = nCellsY + 2 * nGhostCells; 
+    SimpleArray< double, 14 > F_L, F_R, N; 
 
-#pragma omp parallel for private( cell, F_L, F_R, M )
+#pragma omp parallel for private( cell, F_L, F_R, N )
     for( int i = nGhostCells; i < nGhostCells + nCellsX; i++ )
     {
         for( int j = nGhostCells; j < nGhostCells + nCellsY; j++ )
         {
-            cell = i * ( nCellsY + 2 * nGhostCells ) + j; 
+            cell = i * M + j; 
             slicFlux( dt, dx, 0, 
-                    tempVars[cell - 2 * ( nCellsY + 2 * nGhostCells )],
-                    tempVars[cell - ( nCellsY + 2 * nGhostCells )],
+                    tempVars[cell - 2 * M],
+                    tempVars[cell - M],
                     tempVars[cell], 
-                    tempVars[cell + ( nCellsY + 2 * nGhostCells )], 
+                    tempVars[cell + M], 
                     F_L );
             slicFlux( dt, dx, 0,
-                    tempVars[cell - ( nCellsY + 2 * nGhostCells )],
+                    tempVars[cell - M],
                     tempVars[cell], 
-                    tempVars[cell + ( nCellsY + 2 * nGhostCells )], 
-                    tempVars[cell + 2 * ( nCellsY + 2 * nGhostCells )], 
+                    tempVars[cell + M], 
+                    tempVars[cell + 2 * M], 
                     F_R );
             nonconservativeTerms( 0, 
-                    tempVars[cell - ( nCellsY + 2 * nGhostCells )], 
+                    tempVars[cell - M], 
                     tempVars[cell], 
-                    tempVars[cell + ( nCellsY + 2 * nGhostCells )], 
-                    M );
-            consVars[cell] = tempVars[cell] + dt / dx * ( F_L - F_R + M ); 
+                    tempVars[cell + M], 
+                    N );
+            consVars[cell] = tempVars[cell] + dt / dx * ( F_L - F_R + N ); 
         }
     } 
-    renormalizeDistortion();
+    
+    if( !isPhysical() )
+    {
+        std::cout << "Unphysical state encountered in function " 
+            << "xSweep() " << std::endl; 
+    }
 }
 
 void HyperbolicPeshkovRomenski::ySweep( double dt )
@@ -785,7 +797,12 @@ void HyperbolicPeshkovRomenski::ySweep( double dt )
             consVars[cell] = tempVars[cell] + dt / dy * ( F_B - F_T + N); 
         }
     } 
-    renormalizeDistortion();
+    
+    if( !isPhysical() )
+    {
+        std::cout << "Unphysical state encountered in function " 
+            << "ySweep() " << std::endl; 
+    }
 }
 
 void HyperbolicPeshkovRomenski::renormalizeDistortion()
@@ -798,8 +815,8 @@ void HyperbolicPeshkovRomenski::renormalizeDistortion()
     {
         rho = getDensity( consVars[i] );
         A = getDistortion( consVars[i] );
-        scaleFactor = pow( rho / ( rho_0 * A.determinant() ), 1.0 / 3.0 );
-        A *= scaleFactor;
+        scaleFactor = 1 + ( cbrt( rho_0 / rho * A.determinant() ) - 1 ) / 6.0;
+        A /= scaleFactor;
         for( int j = 0; j < 3; j++ )
         {
             for( int k = 0; k < 3; k++ )
@@ -807,6 +824,12 @@ void HyperbolicPeshkovRomenski::renormalizeDistortion()
                 consVars[i][4 + 3 * j + k] = A(j, k);
             }
         }
+    }
+    
+    if( !isPhysical() )
+    {
+        std::cout << "Unphysical state encountered in function " 
+            << "renormalizeDistortion() " << std::endl; 
     }
 }
 
@@ -829,7 +852,8 @@ void HyperbolicPeshkovRomenski::output2D( char* filename )
         << "A11" << "\t" << "A12" << "\t" << "A13" << "\t" 
         << "A21" << "\t" << "A22" << "\t" << "A23" << "\t" 
         << "A31" << "\t" << "A32" << "\t" << "A33" << "\t" 
-        << "omega" << "\t" << "curlynorm" << std::endl; 
+        << "omega" << "\t" << "curlynorm" << "\t" 
+        << "rho-rho0detA" << std::endl; 
 
     for( int i = nGhostCells; i < nGhostCells + nCellsX; i++ )
     {
@@ -857,7 +881,8 @@ void HyperbolicPeshkovRomenski::output2D( char* filename )
                 << A(0, 0) << "\t" << A(0, 1) << "\t" << A(0, 2) << "\t"
                 << A(1, 0) << "\t" << A(1, 1) << "\t" << A(1, 2) << "\t"
                 << A(2, 0) << "\t" << A(2, 1) << "\t" << A(2, 2) << "\t"
-                << omega << "\t" << curlyguy.norm() << std::endl;
+                << omega << "\t" << curlyguy.norm() << "\t" 
+                << rho - rho_0 * A.determinant() << std::endl;
         }
         fs << std::endl; 
     }
@@ -944,13 +969,13 @@ bool HyperbolicPeshkovRomenski::isPhysical()
             rho = getDensity( consVars[i * M + j] );
             if( std::isnan( rho ) )
             {
-                std::cout << "Problem: rho = nan at x = " << x << ", y = " << y
+                std::cout << "Error: rho = nan at x = " << x << ", y = " << y
                     << ". " << std::endl; 
                 return false; 
             }
             else if( rho < 0.0 )
             {
-                std::cout << "Problem: rho < 0.0 at x = " << x << ", y = " << y
+                std::cout << "Error: rho < 0.0 at x = " << x << ", y = " << y
                     << ". " << std::endl; 
                 return false; 
             }
@@ -960,7 +985,7 @@ bool HyperbolicPeshkovRomenski::isPhysical()
             {
                 if( std::isnan( u[k] ) )
                 {
-                    std::cout << "Problem: u[" << k << "] = nan at x = " << x
+                    std::cout << "Error: u[" << k << "] = nan at x = " << x
                         << ", y = " << y << ". " << std::endl; 
                     return false; 
                 }
@@ -973,7 +998,7 @@ bool HyperbolicPeshkovRomenski::isPhysical()
                 {
                     if( std::isnan( A(k, l) ) )
                     {
-                        std::cout << "Problem: A(" << k << ", " << l 
+                        std::cout << "Error: A(" << k << ", " << l 
                             << ") = nan at x = " << x << ", y = " << y << ". "
                             << std::endl; 
                         return false; 
@@ -984,7 +1009,7 @@ bool HyperbolicPeshkovRomenski::isPhysical()
             E = getEnergy( consVars[i * M + j] );
             if( std::isnan( E ) )
             {
-                std::cout << "Problem: E = nan at x = " << x << ", y = " << y
+                std::cout << "Error: E = nan at x = " << x << ", y = " << y
                     << ". " << std::endl; 
                 return false; 
             }
@@ -992,13 +1017,7 @@ bool HyperbolicPeshkovRomenski::isPhysical()
             p = getPressure( consVars[i * M + j] );
             if( std::isnan( p ) )
             {
-                std::cout << "Problem: p = nan at x = " << x << ", y = " << y
-                    << ". " << std::endl; 
-                return false; 
-            }
-            else if( p < 0.0 )
-            {
-                std::cout << "Problem: p < 0.0 at x = " << x << ", y = " << y
+                std::cout << "Error: p = nan at x = " << x << ", y = " << y
                     << ". " << std::endl; 
                 return false; 
             }
@@ -1078,7 +1097,12 @@ void HPR_Fluid::integrateODE( double dt )
                     1.0e-6 * dt );
         }
     }
-    renormalizeDistortion();
+    
+    if( !isPhysical() )
+    {
+        std::cout << "Unphysical state encountered in function " 
+            << "integrateODE() " << std::endl; 
+    }
 }
 
 /* CLASS HPR_SOLID */
@@ -1251,7 +1275,7 @@ void configurate( const char* inputFile, int& nCellsX, int& nCellsY,
 
     for( int i = 0; i < 2; i++ )
     {
-        initDistortion[i] = pow( initDensity[i] / rho_0, 1.0 / 3.0 ) *
+        initDistortion[i] = cbrt( initDensity[i] / rho_0 ) *
             Eigen::Matrix3d::Identity();
     }
 }
