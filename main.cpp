@@ -56,10 +56,10 @@ int main( int argc, char* argv[] )
     {
         if( t / tStop >= l / 100.0 )
         {
-            sprintf( outfile, "%s_1DSliceX_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
+/*            sprintf( outfile, "%s_1DSliceX_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
             state.output1DSliceX( outfile );
             sprintf( outfile, "%s_1DSliceY_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
-            state.output1DSliceY( outfile );
+            state.output1DSliceY( outfile );*/
             sprintf( outfile, "%s_2D_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
             state.output2D( outfile );
             cout << "\r" << l << "%..." << flush; 
@@ -152,16 +152,19 @@ int main( int argc, char* argv[] )
             return 1;
         }
 
+        if( iter % 100 == 0 )
+            state.renormalizeDistortion();
+
         t += dt;
         iter++;
     }
     cout << flush << "Done!" << endl; 
 
     // Write results to file
-    sprintf( outfile, "%s_1DSliceX_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
+/*    sprintf( outfile, "%s_1DSliceX_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
     state.output1DSliceX( outfile );
     sprintf( outfile, "%s_1DSliceY_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
-    state.output1DSliceY( outfile );
+    state.output1DSliceY( outfile );*/
     sprintf( outfile, "%s_2D_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
     state.output2D( outfile );
 }
