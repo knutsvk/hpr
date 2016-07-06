@@ -56,10 +56,6 @@ int main( int argc, char* argv[] )
     {
         if( t / tStop >= l / 100.0 )
         {
-/*            sprintf( outfile, "%s_1DSliceX_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
-            state.output1DSliceX( outfile );
-            sprintf( outfile, "%s_1DSliceY_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
-            state.output1DSliceY( outfile );*/
             sprintf( outfile, "%s_2D_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
             state.output2D( outfile );
             cout << "\r" << l << "%..." << flush; 
@@ -71,38 +67,6 @@ int main( int argc, char* argv[] )
             dt *= 0.1;
         if( t + dt > tStop )
             dt = tStop - t;
-
-        state.boundaryConditions( BCs );
-        if( !state.isPhysical() )
-        {
-            cout << "Unphysical state encountered in iteration " << iter 
-                << ", time = " << t << ". " << endl;
-            return 1;
-        }
-
-        state.integrateODE( 0.5 * dt );
-        if( !state.isPhysical() )
-        {
-            cout << "Unphysical state encountered in iteration " << iter 
-                << ", time = " << t << ". " << endl;
-            return 1;
-        }
-
-        state.boundaryConditions( BCs );
-        if( !state.isPhysical() )
-        {
-            cout << "Unphysical state encountered in iteration " << iter 
-                << ", time = " << t << ". " << endl;
-            return 1;
-        }
-
-        state.ySweep( 0.5 * dt );
-        if( !state.isPhysical() )
-        {
-            cout << "Unphysical state encountered in iteration " << iter 
-                << ", time = " << t << ". " << endl;
-            return 1;
-        }
 
         state.boundaryConditions( BCs );
         if( !state.isPhysical() )
@@ -128,7 +92,7 @@ int main( int argc, char* argv[] )
             return 1;
         }
 
-        state.ySweep( 0.5 * dt );
+        state.ySweep( dt );
         if( !state.isPhysical() )
         {
             cout << "Unphysical state encountered in iteration " << iter 
@@ -144,7 +108,7 @@ int main( int argc, char* argv[] )
             return 1;
         }
 
-        state.integrateODE( 0.5 * dt );
+        state.integrateODE( dt );
         if( !state.isPhysical() )
         {
             cout << "Unphysical state encountered in iteration " << iter 
@@ -152,8 +116,7 @@ int main( int argc, char* argv[] )
             return 1;
         }
 
-        if( iter % 100 == 0 )
-            state.renormalizeDistortion();
+        state.renormalizeDistortion();
 
         t += dt;
         iter++;
@@ -161,10 +124,6 @@ int main( int argc, char* argv[] )
     cout << flush << "Done!" << endl; 
 
     // Write results to file
-/*    sprintf( outfile, "%s_1DSliceX_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
-    state.output1DSliceX( outfile );
-    sprintf( outfile, "%s_1DSliceY_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
-    state.output1DSliceY( outfile );*/
     sprintf( outfile, "%s_2D_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
     state.output2D( outfile );
 }
