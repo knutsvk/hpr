@@ -331,9 +331,8 @@ void HyperbolicPeshkovRomenski::initialize( double initDiscontPos,
 {
     int cell;
     double x, y, r;
-    bool isLeft;
+    bool isLeft = true;
 
-#pragma omp parallel for private( x, y, r, cell )
     for( int i = 0; i < nCellsX + 2 * nGhostCells; i++ )
     {
         for( int j = 0; j < nCellsY + 2 * nGhostCells; j++ )
@@ -401,7 +400,6 @@ void HyperbolicPeshkovRomenski::initializeDoubleShearLayer()
     SimpleArray< double, 3 > u; 
     u[2] = 0.0;
 
-#pragma omp parallel for private( x, y, cell )
     for( int i = 0; i < nCellsX + 2 * nGhostCells; i++ )
     {
         for( int j = 0; j < nCellsY + 2 * nGhostCells; j++ )
@@ -809,19 +807,23 @@ void HyperbolicPeshkovRomenski::renormalizeDistortion()
 {
     double rho;
     Eigen::Matrix3d A; 
+    double tol = 0.1; 
     double scaleFactor; 
 #pragma omp parallel for private( rho, A, scaleFactor )
     for( int i = 0; i < nCellsTot; i++ )
     {
         rho = getDensity( consVars[i] );
         A = getDistortion( consVars[i] );
-        scaleFactor = 1 + ( cbrt( rho_0 / rho * A.determinant() ) - 1 ) / 6.0;
-        A /= scaleFactor;
-        for( int j = 0; j < 3; j++ )
+        if( fabs( rho / rho_0 - A.determinant() ) > tol )
         {
-            for( int k = 0; k < 3; k++ )
+            scaleFactor = 1 + ( cbrt( rho_0 / rho * A.determinant() ) - 1 ) / 6.0;
+            A /= scaleFactor;
+            for( int j = 0; j < 3; j++ )
             {
-                consVars[i][4 + 3 * j + k] = A(j, k);
+                for( int k = 0; k < 3; k++ )
+                {
+                    consVars[i][4 + 3 * j + k] = A(j, k);
+                }
             }
         }
     }
