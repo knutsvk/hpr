@@ -99,6 +99,12 @@ int main( int argc, char* argv[] )
         }
 
         state.renormalizeDistortion();
+        if( !state.isPhysical() )
+        {
+            cout << "Unphysical state encountered in iteration " << iter 
+                << ", time = " << t << ". " << endl;
+            return 1;
+        }
 
         cout << endl; 
 

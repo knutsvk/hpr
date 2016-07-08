@@ -807,24 +807,14 @@ void HyperbolicPeshkovRomenski::renormalizeDistortion()
 {
     double rho;
     Eigen::Matrix3d A; 
-    double tol = 1.0e-6; 
-    double scaleFactor; 
-    int nRenormed = 0;
 
-#pragma omp parallel for private( rho, A, scaleFactor ) reduction( +:nRenormed )
+#pragma omp parallel for private( rho, A )
     for( int i = 0; i < nCellsTot; i++ )
     {
         rho = getDensity( consVars[i] );
         A = getDistortion( consVars[i] );
 
-        if( fabs( rho / rho_0 - A.determinant() ) > tol )
-            nRenormed++;
-        
-        while( fabs( rho / rho_0 - A.determinant() ) > tol )
-        {
-            scaleFactor = 1 + ( cbrt( rho_0 / rho * A.determinant() ) - 1 ) / 6.0;
-            A /= scaleFactor;
-        }
+        A *= ( rho / ( rho_0 * A.determinant() ) + 5 ) / 6.0;
 
         for( int j = 0; j < 3; j++ )
         {
@@ -835,8 +825,6 @@ void HyperbolicPeshkovRomenski::renormalizeDistortion()
         }
     }
 
-    std::cout << ", nRenormed = " << nRenormed; 
-    
     if( !isPhysical() )
     {
         std::cout << "Unphysical state encountered in function " 
