@@ -54,11 +54,12 @@ int main( int argc, char* argv[] )
     l = 0.0;
     while(t < tStop)
     {
+        cout << "iter: " << iter << ", t = " << t;
+        
         if( t / tStop >= l / 100.0 )
         {
             sprintf( outfile, "%s_2D_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
             state.output2D( outfile );
-            cout << "\r" << l << "%..." << flush; 
             l += 10.0;
         }
 
@@ -68,14 +69,9 @@ int main( int argc, char* argv[] )
         if( t + dt > tStop )
             dt = tStop - t;
 
-        state.boundaryConditions( BCs );
-        if( !state.isPhysical() )
-        {
-            cout << "Unphysical state encountered in iteration " << iter 
-                << ", time = " << t << ". " << endl;
-            return 1;
-        }
+        cout << ", dt = " << dt; 
 
+        state.boundaryConditions( BCs );
         state.xSweep( dt );
         if( !state.isPhysical() )
         {
@@ -85,13 +81,6 @@ int main( int argc, char* argv[] )
         }
 
         state.boundaryConditions( BCs );
-        if( !state.isPhysical() )
-        {
-            cout << "Unphysical state encountered in iteration " << iter 
-                << ", time = " << t << ". " << endl;
-            return 1;
-        }
-
         state.ySweep( dt );
         if( !state.isPhysical() )
         {
@@ -101,13 +90,6 @@ int main( int argc, char* argv[] )
         }
 
         state.boundaryConditions( BCs );
-        if( !state.isPhysical() )
-        {
-            cout << "Unphysical state encountered in iteration " << iter 
-                << ", time = " << t << ". " << endl;
-            return 1;
-        }
-
         state.integrateODE( dt );
         if( !state.isPhysical() )
         {
@@ -118,10 +100,12 @@ int main( int argc, char* argv[] )
 
         state.renormalizeDistortion();
 
+        cout << endl; 
+
         t += dt;
         iter++;
     }
-    cout << flush << "Done!" << endl; 
+    cout << "Done!" << endl; 
 
     // Write results to file
     sprintf( outfile, "%s_2D_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );

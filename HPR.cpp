@@ -807,26 +807,35 @@ void HyperbolicPeshkovRomenski::renormalizeDistortion()
 {
     double rho;
     Eigen::Matrix3d A; 
-    double tol = 0.1; 
+    double tol = 1.0e-6; 
     double scaleFactor; 
-#pragma omp parallel for private( rho, A, scaleFactor )
+    int nRenormed = 0;
+
+#pragma omp parallel for private( rho, A, scaleFactor ) reduction( +:nRenormed )
     for( int i = 0; i < nCellsTot; i++ )
     {
         rho = getDensity( consVars[i] );
         A = getDistortion( consVars[i] );
+
         if( fabs( rho / rho_0 - A.determinant() ) > tol )
+            nRenormed++;
+        
+        while( fabs( rho / rho_0 - A.determinant() ) > tol )
         {
             scaleFactor = 1 + ( cbrt( rho_0 / rho * A.determinant() ) - 1 ) / 6.0;
             A /= scaleFactor;
-            for( int j = 0; j < 3; j++ )
+        }
+
+        for( int j = 0; j < 3; j++ )
+        {
+            for( int k = 0; k < 3; k++ )
             {
-                for( int k = 0; k < 3; k++ )
-                {
-                    consVars[i][4 + 3 * j + k] = A(j, k);
-                }
+                consVars[i][4 + 3 * j + k] = A(j, k);
             }
         }
     }
+
+    std::cout << ", nRenormed = " << nRenormed; 
     
     if( !isPhysical() )
     {
@@ -1087,18 +1096,21 @@ void HPR_Fluid::integrateODE( double dt )
 {
     int cell; 
     double tol = 1.0e-6;
+    int nSteps = 0;
 
-#pragma omp parallel for private( cell )
+#pragma omp parallel for private( cell ) reduction( +:nSteps )
     for( int i = nGhostCells; i < nGhostCells + nCellsX; i++ )
     {
         for( int j = nGhostCells; j < nGhostCells + nCellsY; j++ )
         {
             cell = i * ( nCellsY + 2 * nGhostCells ) + j; 
-            integrate_adaptive( make_controlled( tol, tol, stepper_type() ),
-                    HPR_ODE( tau, rho_0 ), consVars[cell], 0.0, 0.0 + dt, 
-                    1.0e-3 * dt );
+            nSteps += integrate_adaptive( make_controlled( tol, tol,
+                stepper_type() ), HPR_ODE( tau, rho_0 ), consVars[cell], 0.0,
+                0.0 + dt, 1.0e-3 * dt );
         }
     }
+
+    std::cout << ", avg_stp = " << float(nSteps) / ( nCellsX + nCellsY ); 
     
     if( !isPhysical() )
     {
