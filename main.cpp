@@ -98,6 +98,15 @@ int main( int argc, char* argv[] )
             return 1;
         }
 
+        state.boundaryConditions( BCs );
+        state.diffuse();
+        if( !state.isPhysical() )
+        {
+            cout << "Unphysical state encountered in iteration " << iter 
+                << ", time = " << t << ". " << endl;
+            return 1;
+        }
+
         state.renormalizeDistortion();
         if( !state.isPhysical() )
         {

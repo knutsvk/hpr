@@ -803,6 +803,64 @@ void HyperbolicPeshkovRomenski::ySweep( double dt )
     }
 }
 
+void HyperbolicPeshkovRomenski::diffuse()
+{
+    int cell; 
+    int M = nCellsY + 2 * nGhostCells; 
+    Eigen::Matrix3d A_P, A_L, A_R, A_B, A_T, A_TR, A_BR, A_BL, A_TL, curlcurlA;
+
+#pragma omp parallel for private( cell, A_P, A_L, A_R, A_B, A_T, A_TR, A_BR, A_BL, A_TL, curlcurlA ) 
+    for( int i = nGhostCells; i < nGhostCells + nCellsX; i++ )
+    {
+        for( int j = nGhostCells; j < nGhostCells + nCellsY; j++ )
+        {
+            cell = i * M + j; 
+            A_P = getDistortion( consVars[cell] );
+            A_L = getDistortion( consVars[cell - M] ); 
+            A_R = getDistortion( consVars[cell + M] ); 
+            A_B = getDistortion( consVars[cell - 1] ); 
+            A_T = getDistortion( consVars[cell + 1] ); 
+            A_TR = getDistortion( consVars[cell + M + 1] ); 
+            A_BR = getDistortion( consVars[cell + M - 1] ); 
+            A_BL = getDistortion( consVars[cell - M - 1] ); 
+            A_TL = getDistortion( consVars[cell - M + 1] ); 
+
+            curlcurlA(0, 0) = A_T(0, 0) - 2 * A_P(0, 0) + A_B(0, 0) - 
+                0.25 * ( A_TR(0, 1) - A_BR(0, 1) + A_BL(0, 1) - A_TL(0, 1) ); 
+            curlcurlA(1, 0) = A_T(1, 0) - 2 * A_P(1, 0) + A_B(1, 0) - 
+                0.25 * ( A_TR(1, 1) - A_BR(1, 1) + A_BL(1, 1) - A_TL(1, 1) ); 
+            curlcurlA(2, 0) = A_T(2, 0) - 2 * A_P(2, 0) + A_B(2, 0) - 
+                0.25 * ( A_TR(2, 1) - A_BR(2, 1) + A_BL(2, 1) - A_TL(2, 1) ); 
+            curlcurlA(0, 1) = A_R(0, 1) - 2 * A_P(0, 1) + A_L(0, 1) -
+                0.25 * ( A_TR(0, 0) - A_BR(0, 0) + A_BL(0, 0) - A_TL(0, 0) ); 
+            curlcurlA(1, 1) = A_R(1, 1) - 2 * A_P(1, 1) + A_L(1, 1) -
+                0.25 * ( A_TR(1, 0) - A_BR(1, 0) + A_BL(1, 0) - A_TL(1, 0) ); 
+            curlcurlA(2, 1) = A_R(2, 1) - 2 * A_P(2, 1) + A_L(2, 1) -
+                0.25 * ( A_TR(2, 0) - A_BR(2, 0) + A_BL(2, 0) - A_TL(2, 0) ); 
+            curlcurlA(0, 2) = - A_R(0, 2) - A_L(0, 2) - A_T(0, 2) - A_B(0, 2) +
+                4 * A_P(0, 2);
+            curlcurlA(1, 2) = - A_R(1, 2) - A_L(1, 2) - A_T(1, 2) - A_B(1, 2) +
+                4 * A_P(1, 2);
+            curlcurlA(2, 2) = - A_R(2, 2) - A_L(2, 2) - A_T(2, 2) - A_B(2, 2) +
+                4 * A_P(2, 2);
+
+            for( int k = 0; k < 3; k++ )
+            {
+                for( int l = 0; l < 3; l++ )
+                {
+                    consVars[cell][4 + 3 * k + l] += 0.25 * curlcurlA(3 * k, l); 
+                }
+            }
+        }
+    }
+
+    if( !isPhysical() )
+    {
+        std::cout << "Unphysical state encountered in function " 
+            << "diffuse() " << std::endl; 
+    }
+}
+
 void HyperbolicPeshkovRomenski::renormalizeDistortion()
 {
     double rho;
@@ -1161,8 +1219,6 @@ HPR_ODE::HPR_ODE( double _tau, double _rho_0 )
 
 void HPR_ODE::operator()( const state_type& Q, state_type& S, const double t )
 {
-    double nu = Q[0] / rho_0;
-
     Eigen::Matrix3d A;
     for( int i = 0; i < 3; i++ )
     {
@@ -1174,7 +1230,7 @@ void HPR_ODE::operator()( const state_type& Q, state_type& S, const double t )
 
     Eigen::Matrix3d G = A.transpose() * A;
     Eigen::Matrix3d devG = G - G.trace() / 3.0 * Eigen::Matrix3d::Identity();
-    Eigen::Matrix3d Psi = - 3.0 * pow( nu, 5.0 / 3.0 ) / tau * A * devG;
+    Eigen::Matrix3d Psi = - 3.0 * pow( A.determinant(), 5.0 / 3.0 ) / tau * A * devG;
 
     // TODO: std::fill to set elements of S to zero by default
     for( int i = 0; i < 4; i++ )

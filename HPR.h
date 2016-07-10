@@ -99,6 +99,7 @@ class HyperbolicPeshkovRomenski
         void boundaryConditions( BoundaryCondition type[4] );
         void xSweep( double dt );
         void ySweep( double dt );
+        void diffuse();
         void renormalizeDistortion();
         void output2D( char* filename );
         void output1DSliceX( char* filename );
