@@ -848,7 +848,7 @@ void HyperbolicPeshkovRomenski::diffuse()
             {
                 for( int l = 0; l < 3; l++ )
                 {
-                    consVars[cell][4 + 3 * k + l] += 0.25 * curlcurlA(k, l) / 3; 
+                    consVars[cell][4 + 3 * k + l] += 0.25 * curlcurlA(k, l) / 4; 
                 }
             }
         }
