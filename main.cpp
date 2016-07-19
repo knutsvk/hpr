@@ -72,7 +72,16 @@ int main( int argc, char* argv[] )
         cout << ", dt = " << dt; 
 
         state.boundaryConditions( BCs );
-        state.xSweep( dt );
+        state.integrateODE( 0.5 * dt );
+        if( !state.isPhysical() )
+        {
+            cout << "Unphysical state encountered in iteration " << iter 
+                << ", time = " << t << ". " << endl;
+            return 1;
+        }
+
+        state.boundaryConditions( BCs );
+        state.xSweep( 0.5 * dt );
         if( !state.isPhysical() )
         {
             cout << "Unphysical state encountered in iteration " << iter 
@@ -90,7 +99,16 @@ int main( int argc, char* argv[] )
         }
 
         state.boundaryConditions( BCs );
-        state.integrateODE( dt );
+        state.xSweep( 0.5 * dt );
+        if( !state.isPhysical() )
+        {
+            cout << "Unphysical state encountered in iteration " << iter 
+                << ", time = " << t << ". " << endl;
+            return 1;
+        }
+
+        state.boundaryConditions( BCs );
+        state.integrateODE( 0.5 * dt );
         if( !state.isPhysical() )
         {
             cout << "Unphysical state encountered in iteration " << iter 
