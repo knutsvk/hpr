@@ -58,6 +58,10 @@ int main( int argc, char* argv[] )
         
         if( t / tStop >= l / 100.0 )
         {
+            sprintf( outfile, "%s_1DX_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
+            state.output1DSliceX( outfile );
+            sprintf( outfile, "%s_1DY_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
+            state.output1DSliceY( outfile );
             sprintf( outfile, "%s_2D_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
             state.output2D( outfile );
             l += 10.0;
@@ -141,6 +145,10 @@ int main( int argc, char* argv[] )
     cout << "Done!" << endl; 
 
     // Write results to file
+    sprintf( outfile, "%s_1DX_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
+    state.output1DSliceX( outfile );
+    sprintf( outfile, "%s_1DY_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
+    state.output1DSliceY( outfile );
     sprintf( outfile, "%s_2D_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
     state.output2D( outfile );
 }
