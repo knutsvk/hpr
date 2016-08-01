@@ -1,6 +1,6 @@
 INFILE=main
 OUTFILE=Simulate
-CC=g++-4.9
+CC=g++-5
 CFLAGS=-O3 -Wall -Werror -pedantic -ansi -lm -lconfig++ -I ~/.include/ -fopenmp -Wno-long-long 
 COMPILE_COMMAND=$(CC) $(CFLAGS)
 
