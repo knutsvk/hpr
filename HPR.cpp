@@ -1141,7 +1141,7 @@ double HPR_Fluid::getTimeStep( const double c_CFL )
 void HPR_Fluid::integrateODE( double dt )
 {
     int cell; 
-    double tol = 1.0e-16;
+    double tol = 1.0e-6;
     int nSteps = 0;
 
 #pragma omp parallel for private( cell ) reduction( +:nSteps )
