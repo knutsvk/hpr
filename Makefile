@@ -1,11 +1,11 @@
 INFILE=main
 OUTFILE=Simulate
 CC=g++-5
-CFLAGS=-O3 -Wall -Werror -pedantic -ansi -lm -lconfig++ -I ~/.include/ -fopenmp -Wno-long-long 
-COMPILE_COMMAND=$(CC) $(CFLAGS)
+CFLAGS=-O3 -Wall -Werror -pedantic -ansi -I ~/.include/ -fopenmp -Wno-long-long 
+LDFLAGS=-lm -lconfig++
 
 all: ${INFILE}.cpp
-	$(COMPILE_COMMAND) -o $(OUTFILE) $(INFILE).cpp HPR.cpp
+	$(CC) $(CFLAGS) -o $(OUTFILE) $(INFILE).cpp HPR.cpp $(LDFLAGS)
 
 clean: 
 	find . -name '*~' -delete
