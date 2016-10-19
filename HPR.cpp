@@ -187,6 +187,17 @@ void HyperbolicPeshkovRomenski::nonconservativeTerms( int dir,
     }
     else if( dir == 1 )
     {
+        N[4] = - u[1] * ( A_L(0, 0) - A_R(0, 0) );
+        N[5] = - u[1] * ( A_L(1, 0) - A_R(1, 0) );
+        N[6] = - u[1] * ( A_L(2, 0) - A_R(2, 0) );
+
+        N[7] = u[0] * ( A_L(0, 0) - A_R(0, 0) ) + u[2] * ( A_L(0, 2) - A_R(0, 2) ); 
+        N[8] = u[0] * ( A_L(1, 0) - A_R(1, 0) ) + u[2] * ( A_L(1, 2) - A_R(1, 2) ); 
+        N[9] = u[0] * ( A_L(2, 0) - A_R(2, 0) ) + u[2] * ( A_L(2, 2) - A_R(2, 2) ); 
+        
+        N[10] = - u[1] * ( A_L(0, 2) - A_R(0, 2) ); 
+        N[11] = - u[1] * ( A_L(1, 2) - A_R(1, 2) ); 
+        N[12] = - u[1] * ( A_L(2, 2) - A_R(2, 2) ); 
 
     }
 
@@ -1135,7 +1146,7 @@ double HPR_Fluid::getTimeStep( const double c_CFL )
 void HPR_Fluid::integrateODE( double dt )
 {
     int cell; 
-    double tol = 1.0e-6;
+    double tol = 1.0e-9;
     int nSteps = 0;
 
 #pragma omp parallel for private( cell ) reduction( +:nSteps )
