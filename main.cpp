@@ -56,7 +56,7 @@ int main( int argc, char* argv[] )
     {
         cout << "iter: " << iter << ", t = " << t;
         
-        if( t / tStop >= l / 100.0 )
+/*        if( t / tStop >= l / 100.0 )
         {
             sprintf( outfile, "%s_1DX_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
             state.output1DSliceX( outfile );
@@ -65,7 +65,7 @@ int main( int argc, char* argv[] )
             sprintf( outfile, "%s_2D_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
             state.output2D( outfile );
             l += 10.0;
-        }
+        }*/
 
         dt = state.getTimeStep( c );
         if( iter < 10 )
@@ -73,9 +73,15 @@ int main( int argc, char* argv[] )
         if( t + dt > tStop )
             dt = tStop - t;
 
-        cout << ", dt = " << dt; 
+        cout << ", dt = " << dt;
 
         state.boundaryConditions( BCs );
+        state.xSweep( dt ); 
+        state.integrateODE( dt );
+        state.renormalizeDistortion();
+        state.diffuse();
+
+/*        state.boundaryConditions( BCs );
         state.integrateODE( 0.5 * dt );
         if( !state.isPhysical() )
         {
@@ -135,7 +141,7 @@ int main( int argc, char* argv[] )
             cout << "Unphysical state encountered in iteration " << iter 
                 << ", time = " << t << ". " << endl;
             return 1;
-        }
+        }*/
 
         cout << endl; 
 
