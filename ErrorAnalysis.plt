@@ -1,16 +1,13 @@
-set xrange [0.4:20]
-set yrange [0.0008:0.06]
 set xlabel "no of cells"
-set ylabel "max error"
+set ylabel "error"
 set logscale xy
 
+error_file = "./Results/Errors_Simple_mu1e-3.out"
+n = 4               # 2: 1norm, 3: 2norm, 4: infnorm
 FIT_LIMIT = 1e-6
+
 f(x) = a*x**b
-fit f(x) "ErrorStrang.out" via a,b
+fit f(x) error_file u 1:n via a,b
 
-g(x) = x*c**d
-fit g(x) "ErrorNoStrang.out" via c,d
-
-
-plot "ErrorStrang.out" u 1:2, f(x), "ErrorNoStrang.out" u 1:2, g(x)
+plot error_file u 1:n, f(x)
 pause(-1)
