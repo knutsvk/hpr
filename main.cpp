@@ -12,7 +12,7 @@ int main( int argc, char* argv[] )
     Matrix3d A[2];
     BoundaryCondition BCs[4];
     Direction dir; 
-    char sim[50], infile[50], outfile[50];
+    char sim[100], infile[100], outfile[100];
 
     // Find which simulation to run
     if( argc == 2 )
@@ -58,11 +58,11 @@ int main( int argc, char* argv[] )
         
         if( t / tStop >= l / 100.0 )
         {
-            sprintf( outfile, "%s_1DX_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
+            sprintf( outfile, "./Results/%s_1DX_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
             state.output1DSliceX( outfile );
-            sprintf( outfile, "%s_1DY_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
+            sprintf( outfile, "./Results/%s_1DY_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
             state.output1DSliceY( outfile );
-            sprintf( outfile, "%s_2D_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
+            sprintf( outfile, "./Results/%s_2D_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
             state.output2D( outfile );
             l += 10.0;
         }
@@ -73,9 +73,8 @@ int main( int argc, char* argv[] )
         if( t + dt > tStop )
             dt = tStop - t;
 
-        cout << ", dt = " << dt; 
+        cout << ", dt = " << dt;
 
-        state.boundaryConditions( BCs );
         state.integrateODE( 0.5 * dt );
         if( !state.isPhysical() )
         {
@@ -111,7 +110,6 @@ int main( int argc, char* argv[] )
             return 1;
         }
 
-        state.boundaryConditions( BCs );
         state.integrateODE( 0.5 * dt );
         if( !state.isPhysical() )
         {
@@ -120,7 +118,6 @@ int main( int argc, char* argv[] )
             return 1;
         }
 
-        state.boundaryConditions( BCs );
         state.diffuse();
         if( !state.isPhysical() )
         {
@@ -144,11 +141,13 @@ int main( int argc, char* argv[] )
     }
     cout << "Done!" << endl; 
 
-    // Write results to file
-    sprintf( outfile, "%s_1DX_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
+    // Write final results to file
+    sprintf( outfile, "./Results/%s_1DX_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
     state.output1DSliceX( outfile );
-    sprintf( outfile, "%s_1DY_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
+    sprintf( outfile, "./Results/%s_1DY_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
     state.output1DSliceY( outfile );
-    sprintf( outfile, "%s_2D_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
+    sprintf( outfile, "./Results/%s_2D_Nx%d_Ny%d_%d.out", sim, Nx, Ny, (int) l );
     state.output2D( outfile );
+
+    return 0;
 }
