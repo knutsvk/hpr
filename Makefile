@@ -1,6 +1,6 @@
 INFILE=main
 OUTFILE=Simulate
-CC=g++-5
+CC=g++
 CFLAGS=-O3 -Wall -Werror -pedantic -ansi -I ~/.include/ -fopenmp -Wno-long-long 
 LDFLAGS=-lm -lconfig++
 

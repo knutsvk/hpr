@@ -66,7 +66,7 @@ class HyperbolicPeshkovRomenski
                 const SimpleArray< double, 14 >& Q_R, 
                 const SimpleArray< double, 14 >& Q_2R, 
                 SimpleArray< double, 14 >& F );
-        void nonconservativeTerms( int dir, 
+        void nonconservativeTerms( double dt, double dr, int dir, 
                 const SimpleArray< double, 14 >& Q_L, 
                 const SimpleArray< double, 14 >& Q_0, 
                 const SimpleArray< double, 14 >& Q_R, 

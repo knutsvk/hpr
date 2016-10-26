@@ -144,13 +144,13 @@ void HyperbolicPeshkovRomenski::slicFlux( double dt, double dr, int dir,
     forceFlux( dt, dr, dir, Q_R_bar, Q_L_bar, F );
 }
 
-void HyperbolicPeshkovRomenski::nonconservativeTerms( int dir, 
+void HyperbolicPeshkovRomenski::nonconservativeTerms( double dt, double dr, int dir, 
         const SimpleArray< double, 14 >& Q_L, 
         const SimpleArray< double, 14 >& Q_0, 
         const SimpleArray< double, 14 >& Q_R, 
         SimpleArray< double, 14 >& N )
 {
-    SimpleArray< double, 14 > xi, Q_LI, Q_RI;
+    SimpleArray< double, 14 > xi, Q_LI, Q_RI, F_LI, F_RI, Q_LI_bar, Q_RI_bar, Q_0_bar; 
 
     // Calculate TVD slope limiters
     for( int j = 0; j < 14; j++ )
@@ -162,8 +162,25 @@ void HyperbolicPeshkovRomenski::nonconservativeTerms( int dir,
     Q_LI = Q_0 - 0.25 * xi * ( Q_R - Q_L );
     Q_RI = Q_0 + 0.25 * xi * ( Q_R - Q_L );
 
-    Eigen::Matrix3d A_L = getDistortion( Q_LI );
-    Eigen::Matrix3d A_R = getDistortion( Q_RI );
+    // Fluxes for BEVs and spatial average
+    if( dir == 0 )
+    {
+        xFlux( Q_LI, F_LI );
+        xFlux( Q_RI, F_RI );
+    }
+    else if( dir == 1 )
+    {
+        yFlux( Q_LI, F_LI );
+        yFlux( Q_RI, F_RI );
+    }
+
+    // Evolve by time 0.5 * dt
+    Q_LI_bar = Q_RI + 0.5 * dt / dr * ( F_LI - F_RI );
+    Q_RI_bar = Q_RI + 0.5 * dt / dr * ( F_LI - F_RI );
+    Q_0_bar = Q_0 + 0.5 * dt / dr * ( F_LI - F_RI );
+
+    Eigen::Matrix3d A_L = getDistortion( Q_LI_bar );
+    Eigen::Matrix3d A_R = getDistortion( Q_RI_bar );
     SimpleArray< double, 3 > u = getVelocity( Q_0 );
 
     for( int i = 0; i < 4; i++ )
@@ -747,7 +764,7 @@ void HyperbolicPeshkovRomenski::xSweep( double dt )
                     tempVars[cell + M], 
                     tempVars[cell + 2 * M], 
                     F_R );
-            nonconservativeTerms( 0, 
+            nonconservativeTerms( dt, dx, 0, 
                     tempVars[cell - M], 
                     tempVars[cell], 
                     tempVars[cell + M], 
@@ -792,7 +809,7 @@ void HyperbolicPeshkovRomenski::ySweep( double dt )
                     tempVars[cell + 1],
                     tempVars[cell + 2],
                     F_T );
-            nonconservativeTerms( 1, 
+            nonconservativeTerms( dt, dx, 1, 
                     tempVars[cell - 1], 
                     tempVars[cell], 
                     tempVars[cell + 1], 
