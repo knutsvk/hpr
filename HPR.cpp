@@ -460,6 +460,54 @@ void HyperbolicPeshkovRomenski::initializeDoubleShearLayer()
     }
 }
 
+void HyperbolicPeshkovRomenski::initialiseConvergenceTest()
+{
+    // TODO This is just a copy of the double shear layer
+    int cell;
+    double x, y;
+    bool isLeft; 
+    Eigen::Matrix3d A = Eigen::Matrix3d::Identity(); 
+    SimpleArray< double, 3 > u; 
+    u[2] = 0.0;
+
+    for( int i = 0; i < nCellsX + 2 * nGhostCells; i++ )
+    {
+        for( int j = 0; j < nCellsY + 2 * nGhostCells; j++ )
+        {
+            cell = i * ( nCellsY + 2 * nGhostCells ) + j;
+            x = domain[0] + ( i - nGhostCells + 0.5 ) * dx;
+            y = domain[2] + ( j - nGhostCells + 0.5 ) * dy; 
+
+            isLeft = y <= 0.5; 
+
+
+            consVars[cell][0] = 1.0;
+
+            if( isLeft )
+                consVars[cell][1] = tanh( 30 * ( y - 0.25 ) );
+            else
+                consVars[cell][1] = tanh( 30 * ( 0.75 - y ) );
+            u[0] = consVars[cell][1];
+
+            consVars[cell][2] = 0.05 * sin( 2 * M_PI * x );
+            u[1] = consVars[cell][2]; 
+
+            consVars[cell][3] = 0.0;
+
+            for( int k = 0; k < 3; k++ )
+            {
+                for( int l = 0; l < 3; l++ )
+                {
+                    consVars[cell][4 + 3 * k + l] = A(k, l);
+                }
+            }
+
+            consVars[cell][13] = microEnergy( 1.0, 100.0 / 1.4 ) 
+                + mesoEnergy ( A ) + macroEnergy( u );
+        }
+    }
+}
+
 void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
 {
     /* type[0]: left BC type
