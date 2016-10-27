@@ -43,10 +43,15 @@ int main( int argc, char* argv[] )
     HPR_Fluid state( C_s, rho0, Nx, Ny, dom, g, t_PSL );
 
     // Apply initial conditions
-    if( !strcmp( sim, "DoubleShearLayer") )
-        state.initializeDoubleShearLayer();
+    if( !strcmp( sim, "DoubleShearLayer" ) )
+        state.initialiseDoubleShearLayer();
+    else if( !strcmp( sim, "ConvergenceStudies" ) )
+    {
+        state.exactConvergenceSolution();
+        state.initialiseConvergenceTest();
+    }
     else
-        state.initialize( x_0, dir, rho, u, A, p );
+        state.initialise( x_0, dir, rho, u, A, p );
 
     // Enter simulation loop
     t = 0.0;
@@ -75,6 +80,7 @@ int main( int argc, char* argv[] )
 
         cout << ", dt = " << dt;
 
+/*        state.boundaryConditions( BCs );
         state.integrateODE( 0.5 * dt );
         if( !state.isPhysical() )
         {
@@ -110,6 +116,7 @@ int main( int argc, char* argv[] )
             return 1;
         }
 
+        state.boundaryConditions( BCs );
         state.integrateODE( 0.5 * dt );
         if( !state.isPhysical() )
         {
@@ -118,6 +125,7 @@ int main( int argc, char* argv[] )
             return 1;
         }
 
+        state.boundaryConditions( BCs );
         state.diffuse();
         if( !state.isPhysical() )
         {
@@ -132,7 +140,14 @@ int main( int argc, char* argv[] )
             cout << "Unphysical state encountered in iteration " << iter 
                 << ", time = " << t << ". " << endl;
             return 1;
-        }
+        }*/
+
+        state.boundaryConditions( BCs );
+        state.xSweep( dt );
+        state.ySweep( dt );
+        state.integrateODE( dt );
+        state.renormalizeDistortion();
+        state.diffuse();
 
         cout << endl; 
 
