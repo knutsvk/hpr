@@ -2,8 +2,8 @@ set xlabel "no of cells"
 set ylabel "error"
 set logscale xy
 
-error_file = "./Results/Errors_Simple_mu1e-3.out"
-n = 4               # 2: 1norm, 3: 2norm, 4: infnorm
+error_file = "./Results/ConvergenceErrorsStrangCFL06.out"
+n = 2               # 2: 1norm, 3: 2norm, 4: infnorm
 FIT_LIMIT = 1e-6
 
 f(x) = a*x**b
