@@ -92,7 +92,7 @@ class HyperbolicPeshkovRomenski
 
         virtual double getTimeStep( double c_CFL ) = 0;
 
-        void initialize( double initDiscontPos, Direction initDiscontDir,
+        void initialise( double initDiscontPos, Direction initDiscontDir,
                 double density[2], SimpleArray< double, 3 > velocity[2],
                 Eigen::Matrix3d distortion[2], double pressure[2] ); 
                 
@@ -115,7 +115,9 @@ class HyperbolicPeshkovRomenski
                 const SimpleArray< double, 14 >& Q_T );
         void printDomain();
         void periodicBoundaryConditions();
-        void initializeDoubleShearLayer();
+        void initialiseDoubleShearLayer();
+        void initialiseConvergenceTest();
+        void exactConvergenceSolution();
 };
 
 // Fluid class, inherits HPR

@@ -175,7 +175,7 @@ void HyperbolicPeshkovRomenski::nonconservativeTerms( double dt, double dr, int 
     }
 
     // Evolve by time 0.5 * dt
-    Q_LI_bar = Q_RI + 0.5 * dt / dr * ( F_LI - F_RI );
+    Q_LI_bar = Q_LI + 0.5 * dt / dr * ( F_LI - F_RI );
     Q_RI_bar = Q_RI + 0.5 * dt / dr * ( F_LI - F_RI );
     Q_0_bar = Q_0 + 0.5 * dt / dr * ( F_LI - F_RI );
 
@@ -255,9 +255,9 @@ SimpleArray< double, 3 > HyperbolicPeshkovRomenski::getVelocity(
     SimpleArray< double, 3 > u; 
     for( int i = 0; i < 3; i++ ) 
     { 
-        u[i] = Q[i + 1];
+        u[i] = Q[i + 1] / Q[0];
     }
-    return u / Q[0];
+    return u;
 }
 
 Eigen::Matrix3d HyperbolicPeshkovRomenski::getDistortion( 
@@ -346,7 +346,7 @@ double HyperbolicPeshkovRomenski::macroEnergy( SimpleArray< double, 3 > u )
     return 0.5 * ( u[0] * u[0] + u[1] * u[1] + u[2] * u[2] );
 }
 
-void HyperbolicPeshkovRomenski::initialize( double initDiscontPos, 
+void HyperbolicPeshkovRomenski::initialise( double initDiscontPos, 
         Direction initDiscontDir, double density[2], 
         SimpleArray< double, 3 > velocity[2], Eigen::Matrix3d distortion[2],
         double pressure[2] )
@@ -413,7 +413,7 @@ void HyperbolicPeshkovRomenski::initialize( double initDiscontPos,
     }
 }
 
-void HyperbolicPeshkovRomenski::initializeDoubleShearLayer()
+void HyperbolicPeshkovRomenski::initialiseDoubleShearLayer()
 {
     int cell;
     double x, y;
@@ -462,11 +462,12 @@ void HyperbolicPeshkovRomenski::initializeDoubleShearLayer()
 
 void HyperbolicPeshkovRomenski::initialiseConvergenceTest()
 {
-    // TODO This is just a copy of the double shear layer
     int cell;
-    double x, y;
-    bool isLeft; 
-    Eigen::Matrix3d A = Eigen::Matrix3d::Identity(); 
+    const double EPS = 5.0;
+    const double GAM = 1.4;
+    double x, y, r2, rho, p;
+    Eigen::Matrix3d A;
+    Eigen::Matrix3d I = Eigen::Matrix3d::Identity(); 
     SimpleArray< double, 3 > u; 
     u[2] = 0.0;
 
@@ -477,23 +478,18 @@ void HyperbolicPeshkovRomenski::initialiseConvergenceTest()
             cell = i * ( nCellsY + 2 * nGhostCells ) + j;
             x = domain[0] + ( i - nGhostCells + 0.5 ) * dx;
             y = domain[2] + ( j - nGhostCells + 0.5 ) * dy; 
+            r2 = x * x + y * y; 
+            rho = pow( 1.0 - ( GAM - 1.0 ) * EPS * EPS / ( 8 * GAM * M_PI *
+                        M_PI ) * exp( 1 - r2 ), 1.0 / ( GAM - 1.0 ) );
+            u[0] = 1.0 - y * EPS / ( 2 * M_PI) * exp( 0.5 * ( 1.0 - r2 ) );
+            u[1] = 1.0 + x * EPS / ( 2 * M_PI) * exp( 0.5 * ( 1.0 - r2 ) );
+            p = pow( rho, GAM );
+            A = cbrt( rho )  * I;
 
-            isLeft = y <= 0.5; 
-
-
-            consVars[cell][0] = 1.0;
-
-            if( isLeft )
-                consVars[cell][1] = tanh( 30 * ( y - 0.25 ) );
-            else
-                consVars[cell][1] = tanh( 30 * ( 0.75 - y ) );
-            u[0] = consVars[cell][1];
-
-            consVars[cell][2] = 0.05 * sin( 2 * M_PI * x );
-            u[1] = consVars[cell][2]; 
-
-            consVars[cell][3] = 0.0;
-
+            consVars[cell][0] = rho;
+            consVars[cell][1] = rho * u[0];
+            consVars[cell][2] = rho * u[1];
+            consVars[cell][3] = rho * u[2];
             for( int k = 0; k < 3; k++ )
             {
                 for( int l = 0; l < 3; l++ )
@@ -501,11 +497,64 @@ void HyperbolicPeshkovRomenski::initialiseConvergenceTest()
                     consVars[cell][4 + 3 * k + l] = A(k, l);
                 }
             }
-
-            consVars[cell][13] = microEnergy( 1.0, 100.0 / 1.4 ) 
-                + mesoEnergy ( A ) + macroEnergy( u );
+            consVars[cell][13] = rho * ( microEnergy( rho, p ) 
+                + mesoEnergy ( A ) + macroEnergy( u ) );
         }
     }
+}
+
+void HyperbolicPeshkovRomenski::exactConvergenceSolution()
+{
+    int cell;
+    char outfile[100];
+    const double EPS = 5.0;
+    const double GAM = 1.4;
+    const double T_F = 1.0;
+    double x, y, r2, rho, p;
+    Eigen::Matrix3d A;
+    Eigen::Matrix3d I = Eigen::Matrix3d::Identity(); 
+    SimpleArray< double, 3 > u; 
+    u[2] = 0.0;
+
+    for( int i = 0; i < nCellsX + 2 * nGhostCells; i++ )
+    {
+        for( int j = 0; j < nCellsY + 2 * nGhostCells; j++ )
+        {
+            cell = i * ( nCellsY + 2 * nGhostCells ) + j;
+            x = domain[0] + ( i - nGhostCells + 0.5 ) * dx - T_F;
+            y = domain[2] + ( j - nGhostCells + 0.5 ) * dy - T_F; 
+            r2 = x * x + y * y; 
+            rho = pow( 1.0 - ( GAM - 1.0 ) * EPS * EPS / ( 8 * GAM * M_PI *
+                        M_PI ) * exp( 1 - r2 ), 1.0 / ( GAM - 1.0 ) );
+            u[0] = 1.0 - y * EPS / ( 2 * M_PI) * exp( 0.5 * ( 1.0 - r2 ) );
+            u[1] = 1.0 + x * EPS / ( 2 * M_PI) * exp( 0.5 * ( 1.0 - r2 ) );
+            p = pow( rho, GAM );
+            A = cbrt( rho )  * I;
+
+            consVars[cell][0] = rho;
+            consVars[cell][1] = rho * u[0];
+            consVars[cell][2] = rho * u[1];
+            consVars[cell][3] = rho * u[2];
+            for( int k = 0; k < 3; k++ )
+            {
+                for( int l = 0; l < 3; l++ )
+                {
+                    consVars[cell][4 + 3 * k + l] = A(k, l);
+                }
+            }
+            consVars[cell][13] = rho * ( microEnergy( rho, p ) 
+                + mesoEnergy ( A ) + macroEnergy( u ) );
+        }
+    }
+    sprintf( outfile, "./Results/ConvergenceStudies_1DX_Nx%d_Ny%d_Exact.out",
+            nCellsX, nCellsY );
+    output1DSliceX( outfile );
+    sprintf( outfile, "./Results/ConvergenceStudies_1DY_Nx%d_Ny%d_Exact.out",
+            nCellsX, nCellsY ); 
+    output1DSliceY( outfile );
+    sprintf( outfile, "./Results/ConvergenceStudies_2D_Nx%d_Ny%d_Exact.out",
+            nCellsX, nCellsY ); 
+    output2D( outfile );
 }
 
 void HyperbolicPeshkovRomenski::boundaryConditions( BoundaryCondition type[4] )
